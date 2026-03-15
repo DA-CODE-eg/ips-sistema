@@ -1,0 +1,73 @@
+# Guía para subir el sistema a Render
+# (Link público permanente, gratis)
+
+## PASO 1 — Subir el código a GitHub
+
+1. Ve a https://github.com y crea una cuenta gratis si no tienes
+2. Crea un repositorio nuevo → dale nombre "ips-sistema" → privado
+3. En tu PC abre la terminal en la carpeta del proyecto y ejecuta:
+
+   git init
+   git add .
+   git commit -m "primer deploy"
+   git remote add origin https://github.com/TU_USUARIO/ips-sistema.git
+   git push -u origin main
+
+---
+
+## PASO 2 — Crear el servicio en Render
+
+1. Ve a https://render.com y crea cuenta gratis con tu correo de Google
+2. Clic en "New +" → "Web Service"
+3. Conecta tu cuenta de GitHub → elige el repo "ips-sistema"
+4. Render detecta automáticamente el render.yaml
+
+Configuración que Render te pedirá:
+   - Name: ips-sistema (o el nombre que quieras)
+   - Region: Ohio (US East) — la más cercana
+   - Branch: main
+   - Build Command: pip install -r requirements.txt
+   - Start Command: gunicorn "app:create_app()" --bind 0.0.0.0:$PORT
+
+---
+
+## PASO 3 — Variables de entorno (las más importantes)
+
+En Render → tu servicio → "Environment" agrega estas variables:
+
+   DATABASE_URL        → la URL de tu base Neon (postgresql://...)
+   SECRET_KEY          → cualquier texto largo aleatorio
+   MAIL_USERNAME       → tu correo de Gmail
+   MAIL_PASSWORD       → la contraseña de aplicación de Gmail
+   GOOGLE_DRIVE_CREDENTIALS → el JSON de credenciales de Drive (en una sola línea)
+
+---
+
+## PASO 4 — Deploy automático
+
+1. Clic en "Deploy" → Render instala todo y lanza el servidor
+2. En 3-5 minutos tienes tu link:
+   https://ips-sistema.onrender.com
+
+---
+
+## Tu link de solicitar cita quedará así:
+   https://ips-sistema.onrender.com/solicitar-cita
+
+Ese link lo puedes poner en:
+   - WhatsApp
+   - Instagram bio
+   - Página web
+   - QR impreso para consultorio
+
+---
+
+## NOTAS IMPORTANTES
+
+- Plan gratuito de Render: el servidor "duerme" después de 15 min sin uso
+  → la primera visita demora ~30 segundos en despertar
+  → Para evitar esto el plan Starter cuesta $7 USD/mes
+
+- Tu base de datos Neon ya está en la nube → no se pierde nada
+
+- Cada vez que hagas push a GitHub → Render actualiza el sistema automáticamente
