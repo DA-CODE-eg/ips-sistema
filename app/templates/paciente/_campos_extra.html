@@ -1,0 +1,63 @@
+{# Incluir en crear.html y editar.html de paciente con: #}
+{# {% include 'paciente/_campos_extra.html' %} #}
+
+{% if campos_extra %}
+<div class="card mt-4 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="bi bi-sliders"></i> Información Adicional
+  </div>
+  <div class="card-body">
+    <div class="row">
+      {% for campo in campos_extra %}
+      <div class="col-md-{{ '12' if campo.tipo == 'texto_largo' else '6' }} mb-3">
+        <label class="form-label fw-bold">
+          {{ campo.nombre }}
+          {% if campo.obligatorio %}<span class="text-danger">*</span>{% endif %}
+        </label>
+
+        {% set valor_actual = '' %}
+        {% if paciente is defined %}
+          {% for v in paciente.campos_extra %}
+            {% if v.campo_id == campo.id %}
+              {% set valor_actual = v.valor or '' %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+
+        {% if campo.tipo == 'texto' %}
+          <input type="text" name="campo_{{ campo.id }}" class="form-control"
+                 value="{{ valor_actual }}"
+                 {% if campo.obligatorio %}required{% endif %}>
+
+        {% elif campo.tipo == 'texto_largo' %}
+          <textarea name="campo_{{ campo.id }}" class="form-control" rows="3"
+                    {% if campo.obligatorio %}required{% endif %}>{{ valor_actual }}</textarea>
+
+        {% elif campo.tipo == 'numero' %}
+          <input type="number" step="any" name="campo_{{ campo.id }}" class="form-control"
+                 value="{{ valor_actual }}"
+                 {% if campo.obligatorio %}required{% endif %}>
+
+        {% elif campo.tipo == 'fecha' %}
+          <input type="date" name="campo_{{ campo.id }}" class="form-control"
+                 value="{{ valor_actual }}"
+                 {% if campo.obligatorio %}required{% endif %}>
+
+        {% elif campo.tipo == 'seleccion' %}
+          <select name="campo_{{ campo.id }}" class="form-select"
+                  {% if campo.obligatorio %}required{% endif %}>
+            <option value="">-- Seleccionar --</option>
+            {% for opcion in campo.opciones.split(',') %}
+              <option value="{{ opcion.strip() }}"
+                {{ 'selected' if valor_actual == opcion.strip() }}>
+                {{ opcion.strip() }}
+              </option>
+            {% endfor %}
+          </select>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}

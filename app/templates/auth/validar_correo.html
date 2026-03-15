@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Validar Correo — IPS Fulano</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body { font-family:'DM Sans',sans-serif; background:#f0f4f8; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+    .card { border-radius:16px; border:none; box-shadow:0 8px 32px rgba(0,0,0,0.1); max-width:420px; width:90%; padding:40px; background:white; }
+    .titulo { font-family:'Bebas Neue',sans-serif; font-size:24px; color:#0D7377; letter-spacing:2px; }
+    .codigo-input { font-size:28px; letter-spacing:12px; text-align:center; font-weight:bold; border:2px solid #dee2e6; border-radius:12px; padding:16px; width:100%; }
+    .codigo-input:focus { border-color:#0D7377; outline:none; }
+    .btn-ok { background:#0D7377; color:white; border:none; border-radius:10px; padding:14px; font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:3px; width:100%; cursor:pointer; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div style="text-align:center; margin-bottom:24px;">
+    <div style="width:56px;height:56px;background:#E0F7F7;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+      <i class="fas fa-envelope-open-text" style="font-size:24px;color:#0D7377;"></i>
+    </div>
+    <div class="titulo">VALIDAR CORREO</div>
+    <p style="color:#666;font-size:14px;margin-top:4px;">Se envió un código a <strong>{{ email }}</strong></p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for category, message in messages %}
+      <div class="alert-data" data-category="{{ category }}" data-message="{{ message }}"></div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <input type="text" name="codigo" class="codigo-input" maxlength="6"
+           placeholder="000000" autofocus autocomplete="off"
+           oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+    <div style="font-size:13px;color:#e53935;text-align:center;margin-top:8px;">⏱️ Expira en <span id="cd">10:00</span></div>
+    <button type="submit" class="btn-ok mt-3"><i class="fas fa-check me-2"></i>CONFIRMAR CORREO</button>
+  </form>
+  <div style="text-align:center;margin-top:16px;">
+    <a href="{{ url_for('main.lista_usuarios') }}" style="color:#999;font-size:13px;">Cancelar</a>
+  </div>
+</div>
+<script>
+let s=600; const el=document.getElementById('cd');
+const iv=setInterval(()=>{ s--; if(s<=0){clearInterval(iv);el.parentElement.textContent='❌ Código expirado';return;} el.textContent=`${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },1000);
+document.addEventListener('DOMContentLoaded',()=>{ document.querySelectorAll('.alert-data').forEach(e=>{ const icon=e.dataset.category==='success'?'success':e.dataset.category==='danger'||e.dataset.category==='error'?'error':'warning'; Swal.fire({toast:true,position:'top-end',showConfirmButton:false,timer:3500,timerProgressBar:true,icon,title:e.dataset.message}); }); });
+</script>
+</body>
+</html>

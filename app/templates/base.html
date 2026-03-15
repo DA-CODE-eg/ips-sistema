@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IPS FULANO</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    :root { --ips-color: #1E3A5F; --ips-teal: #0D7377; }
+    .navbar { background: linear-gradient(135deg, var(--ips-color), var(--ips-teal)) !important; }
+    .navbar-brand { font-weight: bold; color: white !important; letter-spacing: 1px; }
+    .nav-link-custom { color: rgba(255,255,255,0.85) !important; font-size: 14px; }
+    .nav-link-custom:hover { color: white !important; }
+    .sidebar { min-height: calc(100vh - 56px); background: #f8f9fa; border-right: 1px solid #dee2e6; padding: 16px 0; }
+    .sidebar .nav-link { color: #333; font-size: 14px; padding: 8px 20px; border-radius: 0; }
+    .sidebar .nav-link:hover { background: #e9ecef; color: var(--ips-color); }
+    .sidebar .nav-link.active { background: var(--ips-color); color: white !important; }
+    .sidebar .nav-link i { width: 20px; }
+    .sidebar-section { font-size: 11px; font-weight: bold; color: #888; padding: 12px 20px 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+    body { background: #f0f4f8; }
+    .main-content { padding: 24px; }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none !important; }
+      .main-content { padding: 12px !important; }
+      .table { font-size: 12px; }
+      .btn { font-size: 12px; padding: 4px 8px; }
+      .card-body { padding: 12px !important; }
+      h1,h2,h3 { font-size: 1.2rem !important; }
+      .navbar-brand { font-size: 14px; }
+    }
+
+    @media (max-width: 480px) {
+      .container, .container-fluid { padding: 6px !important; }
+      .table-responsive { overflow-x: auto; }
+      .badge { font-size: 10px; }
+    }
+
+    #sidebar-toggle { display: none; }
+
+    @media (max-width: 768px) {
+      #sidebar-toggle { display: inline-block; }
+      .sidebar.show {
+        display: block !important;
+        position: fixed;
+        z-index: 999;
+        height: 100vh;
+        overflow-y: auto;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-dark">
+  <div class="container-fluid">
+
+    <button id="sidebar-toggle" class="btn btn-outline-light btn-sm me-2"
+      onclick="document.querySelector('.sidebar').classList.toggle('show')">
+      <i class="fas fa-bars"></i>
+    </button>
+
+    <span class="navbar-brand">
+      <i class="fas fa-hospital-alt me-2"></i>IPS FULANO
+    </span>
+
+    <div class="d-flex align-items-center gap-3">
+
+      <small class="text-white-50">v{{ config.APP_VERSION }}</small>
+
+      <div class="dropdown">
+        <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+          <i class="fas fa-user me-1"></i>{{ current_user.nombre }}
+          <span class="badge bg-light text-dark ms-1" style="font-size:10px;">
+            {{ current_user.rol.nombre }}
+          </span>
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <a class="dropdown-item" href="{{ url_for('main.cambiar_password') }}">
+              <i class="fas fa-key me-2"></i>Cambiar contraseña
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item text-danger" href="{{ url_for('main.logout') }}">
+              <i class="fas fa-sign-out-alt me-2"></i>Cerrar sesión
+            </a>
+          </li>
+        </ul>
+
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ALERTA ESPACIO BASE DE DATOS -->
+{% if current_user.is_authenticated and neon_porcentaje >= 70 %}
+<div class="alert alert-{{ 'danger' if neon_porcentaje >= 95 else 'warning' }} alert-dismissible fade show m-0 text-center rounded-0"
+     style="font-size:14px;font-weight:bold;border-radius:0;">
+
+  {% if neon_porcentaje >= 95 %}
+    🚨 CRÍTICO: La base de datos está al {{ neon_porcentaje }}% — El sistema puede dejar de guardar datos. Contacte al administrador YA.
+  {% elif neon_porcentaje >= 85 %}
+    🔴 PELIGRO: La base de datos está al {{ neon_porcentaje }}% de capacidad. Actúe pronto.
+  {% else %}
+    ⚠️ AVISO: La base de datos está al {{ neon_porcentaje }}% de capacidad ({{ neon_mb_usado }} MB de 512 MB).
+  {% endif %}
+
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="d-flex">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" style="width:220px; flex-shrink:0;">
+
+    <div class="sidebar-section">Principal</div>
+    <a href="{{ url_for('main.dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}">
+      <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+
+    <div class="sidebar-section">Gestión</div>
+    <a href="{{ url_for('main.lista_pacientes') }}" class="nav-link {{ 'active' if 'paciente' in request.endpoint }}">
+      <i class="fas fa-users"></i> Pacientes
+    </a>
+
+    <a href="{{ url_for('main.lista_citas') }}" class="nav-link {{ 'active' if 'cita' in request.endpoint }}">
+      <i class="fas fa-calendar-check"></i> Citas
+    </a>
+
+    <div class="sidebar-section">Reportes</div>
+    <a href="{{ url_for('main.menu_reportes') }}" class="nav-link {{ 'active' if 'reporte' in request.endpoint }}">
+      <i class="fas fa-file-pdf"></i> Reportes PDF
+    </a>
+
+    {% if current_user.rol and current_user.rol.nombre == 'admin' %}
+
+    <div class="sidebar-section">Administración</div>
+
+    <a href="{{ url_for('main.lista_usuarios') }}" class="nav-link {{ 'active' if 'usuario' in request.endpoint }}">
+      <i class="fas fa-user-cog"></i> Usuarios
+    </a>
+
+    <a href="{{ url_for('main.lista_especialidades') }}" class="nav-link {{ 'active' if 'especialidad' in request.endpoint }}">
+      <i class="fas fa-stethoscope"></i> Especialidades
+    </a>
+
+    <a href="{{ url_for('main.lista_roles') }}" class="nav-link {{ 'active' if 'rol' in request.endpoint }}">
+      <i class="fas fa-user-tag"></i> Roles
+    </a>
+
+    <a href="{{ url_for('main.campos_personalizados') }}" class="nav-link {{ 'active' if 'campos' in request.endpoint }}">
+      <i class="fas fa-sliders-h"></i> Campos Paciente
+    </a>
+
+    <div class="sidebar-section">Seguridad</div>
+
+    <a href="{{ url_for('main.admin_backup') }}" class="nav-link {{ 'active' if request.endpoint == 'main.admin_backup' }}">
+      <i class="fas fa-download"></i> Backup
+    </a>
+
+    <a href="{{ url_for('main.lista_correos_backup') }}" class="nav-link {{ 'active' if 'correo' in request.endpoint and 'backup' in request.endpoint }}">
+      <i class="fas fa-envelope-open-text"></i> Correos Backup
+    </a>
+
+    <a href="{{ url_for('main.admin_configuracion') }}" class="nav-link {{ 'active' if 'configuracion' in request.endpoint }}">
+      <i class="fas fa-cog"></i> Configuración
+    </a>
+
+    <a href="{{ url_for('main.admin_auditoria') }}" class="nav-link {{ 'active' if 'auditoria' in request.endpoint }}">
+      <i class="fas fa-shield-alt"></i> Auditoría
+    </a>
+
+    {% endif %}
+  </div>
+
+  <!-- CONTENIDO -->
+  <div class="flex-grow-1 main-content">
+    {% block content %}{% endblock %}
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// SISTEMA GLOBAL DE ALERTAS — IPS FULANO
+// ═══════════════════════════════════════════════════════
+
+// Toast rápido (esquina superior derecha)
+const IpsToast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3500,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.addEventListener('mouseenter', Swal.stopTimer);
+    toast.addEventListener('mouseleave', Swal.resumeTimer);
+  }
+});
+
+// Confirmación estándar — retorna Promise
+function IpsConfirmar({
+  titulo    = '¿Está seguro?',
+  texto     = '',
+  icono     = 'warning',
+  btnOk     = 'Sí, continuar',
+  btnCancel = 'Cancelar',
+  colorOk   = '#C0392B'
+} = {}) {
+  return Swal.fire({
+    title: titulo,
+    html: texto,
+    icon: icono,
+    showCancelButton: true,
+    confirmButtonColor: colorOk,
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: `<i class="fas fa-check me-1"></i>${btnOk}`,
+    cancelButtonText:  `<i class="fas fa-times me-1"></i>${btnCancel}`,
+    reverseButtons: true,
+    backdrop: 'rgba(0,0,0,0.5)',
+    customClass: { popup: 'swal-ips-popup' }
+  });
+}
+
+// ── Flash messages → SweetAlert ───────────────────────
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+window.addEventListener('DOMContentLoaded', () => {
+  const cola = [
+    {% for category, message in messages %}
+    { cat: "{{ category }}", msg: `{{ message | e }}` },
+    {% endfor %}
+  ];
+
+  const iconMap = {
+    success : 'success',
+    danger  : 'error',
+    error   : 'error',
+    warning : 'warning',
+    info    : 'info',
+  };
+
+  const colorMap = {
+    success : '#1E8449',
+    danger  : '#C0392B',
+    error   : '#C0392B',
+    warning : '#D35400',
+    info    : '#1A5276',
+  };
+
+  // Si hay error importante → modal grande, resto → toast
+  const tieneError = cola.some(m => m.cat === 'danger' || m.cat === 'error');
+
+  if (tieneError) {
+    // Mostrar TODOS en un solo modal apilado
+    const errores = cola.filter(m => m.cat==='danger'||m.cat==='error');
+    const otros   = cola.filter(m => m.cat!=='danger'&&m.cat!=='error');
+    const html    = errores.map(m =>
+      `<div style="margin-bottom:6px"><i class="fas fa-exclamation-circle me-2" style="color:#C0392B"></i>${m.msg}</div>`
+    ).join('');
+
+    Swal.fire({
+      title: 'Atención',
+      html,
+      icon: 'error',
+      confirmButtonColor: '#C0392B',
+      confirmButtonText: '<i class="fas fa-check me-1"></i>Entendido',
+      customClass: { popup: 'swal-ips-popup' }
+    }).then(() => {
+      // Luego mostrar los informativos como toasts
+      otros.forEach((m, i) => setTimeout(() => {
+        IpsToast.fire({ icon: iconMap[m.cat]||'info', title: m.msg,
+                        iconColor: colorMap[m.cat]||'#1A5276' });
+      }, i * 600));
+    });
+  } else {
+    // Todos como toasts escalonados
+    cola.forEach((m, i) => setTimeout(() => {
+      IpsToast.fire({ icon: iconMap[m.cat]||'info', title: m.msg,
+                      iconColor: colorMap[m.cat]||'#1A5276' });
+    }, i * 700));
+  }
+});
+{% endif %}
+{% endwith %}
+
+// ── Bloque extra por página ────────────────────────────
+</script>
+
+{% block scripts %}{% endblock %}
+
+<style>
+.swal-ips-popup {
+  border-radius: 14px !important;
+  font-family: inherit !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25) !important;
+}
+.swal2-title { font-size: 1.3rem !important; }
+.swal2-html-container { font-size: .97rem !important; }
+</style>
+
+</body>
+</html>

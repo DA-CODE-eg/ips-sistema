@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verificación — IPS Fulano</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body { font-family:'DM Sans',sans-serif; background:#f0f4f8; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+    .card { border-radius:16px; border:none; box-shadow:0 8px 32px rgba(0,0,0,0.1); max-width:420px; width:90%; padding:40px; background:white; }
+    .titulo { font-family:'Bebas Neue',sans-serif; font-size:28px; color:#1E3A5F; letter-spacing:2px; }
+    .codigo-input { font-size:28px; letter-spacing:12px; text-align:center; font-weight:bold; border:2px solid #dee2e6; border-radius:12px; padding:16px; width:100%; }
+    .codigo-input:focus { border-color:#1E3A5F; box-shadow:0 0 0 3px rgba(30,58,95,0.1); outline:none; }
+    .btn-verificar { background:linear-gradient(135deg,#1E3A5F,#0D7377); color:white; border:none; border-radius:10px; padding:14px; font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:3px; width:100%; cursor:pointer; }
+    .correo-hint { background:#f0f7ff; border-radius:8px; padding:12px 16px; font-size:13px; color:#444; margin-bottom:20px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div style="text-align:center; margin-bottom:24px;">
+    <div style="width:56px;height:56px;background:#EFF6FF;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+      <i class="fas fa-shield-alt" style="font-size:24px;color:#1E3A5F;"></i>
+    </div>
+    <div class="titulo">VERIFICACIÓN 2FA</div>
+    <p style="color:#666;font-size:14px;margin-top:4px;">Ingresa el código enviado a tu correo</p>
+  </div>
+
+  <div class="correo-hint">
+    <i class="fas fa-envelope me-2" style="color:#1E3A5F;"></i>
+    Código enviado a <strong>{{ email_parcial }}</strong>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for category, message in messages %}
+      <div class="alert-data" data-category="{{ category }}" data-message="{{ message }}"></div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <input type="text" name="codigo" class="codigo-input" maxlength="6"
+           placeholder="000000" autofocus autocomplete="off"
+           oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+    <div style="font-size:13px;color:#e53935;text-align:center;margin-top:8px;">
+      ⏱️ Expira en <span id="countdown">10:00</span>
+    </div>
+    <button type="submit" class="btn-verificar mt-3">
+      <i class="fas fa-check-circle me-2"></i>VERIFICAR
+    </button>
+  </form>
+
+  <div style="text-align:center;margin-top:20px;">
+    <a href="{{ url_for('main.reenviar_codigo') }}" style="color:#0D7377;font-size:13px;text-decoration:none;">
+      <i class="fas fa-redo me-1"></i>Reenviar código
+    </a>
+    &nbsp;·&nbsp;
+    <a href="{{ url_for('main.index') }}" style="color:#999;font-size:13px;text-decoration:none;">Cancelar</a>
+  </div>
+</div>
+<script>
+let s = 600;
+const el = document.getElementById('countdown');
+const iv = setInterval(() => {
+  s--;
+  if (s <= 0) { clearInterval(iv); el.parentElement.textContent = '❌ Código expirado'; return; }
+  el.textContent = `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+}, 1000);
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.alert-data').forEach(el => {
+    const icon = el.dataset.category === 'success' ? 'success' : el.dataset.category === 'danger' || el.dataset.category === 'error' ? 'error' : 'warning';
+    Swal.fire({ toast:true, position:'top-end', showConfirmButton:false, timer:3500, timerProgressBar:true, icon, title: el.dataset.message });
+  });
+});
+</script>
+</body>
+</html>

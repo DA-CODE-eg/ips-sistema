@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Pacientes - IPS Fulano{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2>Gestión de Pacientes</h2>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{{ url_for('main.crear_paciente') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nuevo Paciente
+            </a>
+        </div>
+    </div>
+
+    <!-- Buscador -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="GET" action="{{ url_for('main.lista_pacientes') }}" class="d-flex">
+                <input type="text" 
+                       name="q" 
+                       class="form-control me-2" 
+                       placeholder="Buscar por nombre o identificación..." 
+                       value="{{ query if query else '' }}">
+                <button type="submit" class="btn btn-secondary">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+                {% if query %}
+                <a href="{{ url_for('main.lista_pacientes') }}" class="btn btn-outline-secondary ms-2">
+                    <i class="fas fa-times"></i>
+                </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    {% if pacientes %}
+<div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Identificación</th>
+                    <th>Sexo</th>
+                    <th>Fecha de Nacimiento</th>
+                    <th>Teléfono</th>
+                    <th>Email</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for paciente in pacientes %}
+                <tr>
+                    <td>{{ paciente.id }}</td>
+                    <td>{{ paciente.nombre }}</td>
+                    <td>{{ paciente.identificacion }}</td>
+                    <td>{{ paciente.sexo or 'N/A' }}</td>
+                    <td>{{ paciente.fecha_nacimiento.strftime('%d/%m/%Y') if paciente.fecha_nacimiento else 'N/A' }}</td>
+                    <td>{{ paciente.telefono or 'N/A' }}</td>
+                    <td>{{ paciente.email or 'N/A' }}</td>
+                    <td>
+                        {% if paciente.activo %}
+                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Activo</span>
+                        {% else %}
+                            <span class="badge bg-secondary"><i class="fas fa-ban me-1"></i>Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('main.historia_clinica', id=paciente.id) }}"
+                           class="btn btn-sm btn-success me-1">
+                            Historia
+                        </a>
+                        <a href="{{ url_for('main.editar_paciente', id=paciente.id) }}"
+                           class="btn btn-sm btn-info me-1">
+                            Editar
+                        </a>
+                        <button type="button"
+                                class="btn btn-sm {{ 'btn-warning' if paciente.activo else 'btn-success' }} me-1"
+                                onclick="togglePaciente({{ paciente.id }}, '{{ paciente.nombre }}', {{ 'true' if paciente.activo else 'false' }})">
+                            {{ 'Desactivar' if paciente.activo else 'Activar' }}
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-danger"
+                                onclick="eliminarPaciente({{ paciente.id }}, '{{ paciente.nombre }}')">
+                            Eliminar
+                        </button>
+                        <form id="formEliminar{{ paciente.id }}"
+                              action="{{ url_for('main.eliminar_paciente', id=paciente.id) }}"
+                              method="POST" style="display:none;"></form>
+                        <form id="formToggle{{ paciente.id }}"
+                              action="{{ url_for('main.toggle_paciente', id=paciente.id) }}"
+                              method="POST" style="display:none;"></form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> 
+        {% if query %}
+            No se encontraron pacientes con "{{ query }}"
+        {% else %}
+            No hay pacientes registrados.
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{% if duplicado_id %}
+<form id="formReactivar{{ duplicado_id }}"
+      action="{{ url_for('main.reactivar_paciente', id=duplicado_id) }}"
+      method="POST" style="display:none;"></form>
+{% endif %}
+
+{% endblock content %}
+
+{% block scripts %}
+<script>
+{% if duplicado_id %}
+window.addEventListener('DOMContentLoaded', () => {
+  Swal.fire({
+    title: '⚠️ Cédula ya registrada',
+    html: `
+      <p>La cédula <strong>{{ duplicado_doc }}</strong> ya existe en el sistema:</p>
+      <div style="background:#FDF2F8;border-left:4px solid #C0392B;padding:12px 16px;border-radius:8px;margin:12px 0;text-align:left">
+        <i class="fas fa-user-circle me-2" style="color:#C0392B"></i>
+        <strong>{{ duplicado_nombre }}</strong>
+        <span class="ms-2 badge {% if duplicado_activo %}bg-success{% else %}bg-secondary{% endif %}">
+          {% if duplicado_activo %}Activo{% else %}Inactivo{% endif %}
+        </span>
+      </div>
+      {% if not duplicado_activo %}
+      <p>Este paciente está <strong>inactivo</strong>.<br>¿Desea reactivarlo para volver a usarlo?</p>
+      {% else %}
+      <p>Este paciente ya está <strong>activo</strong> en el sistema.<br>No es posible crear un duplicado.</p>
+      {% endif %}
+    `,
+    icon: '{% if not duplicado_activo %}question{% else %}info{% endif %}',
+    showCancelButton: {% if not duplicado_activo %}true{% else %}false{% endif %},
+    {% if not duplicado_activo %}
+    confirmButtonText: '<i class="fas fa-user-check me-1"></i>Sí, reactivar paciente',
+    confirmButtonColor: '#1E8449',
+    cancelButtonText: '<i class="fas fa-times me-1"></i>Cancelar',
+    cancelButtonColor: '#6c757d',
+    {% else %}
+    confirmButtonText: '<i class="fas fa-check me-1"></i>Entendido',
+    confirmButtonColor: '#1A5276',
+    {% endif %}
+    reverseButtons: true,
+    customClass: { popup: 'swal-ips-popup' }
+  }).then(r => {
+    if (r.isConfirmed) {
+      {% if not duplicado_activo %}
+      document.getElementById('formReactivar{{ duplicado_id }}').submit();
+      {% endif %}
+    }
+  });
+});
+{% endif %}
+
+// ── Toggle activo/inactivo ────────────────────────────
+function togglePaciente(id, nombre, estaActivo) {
+  const accion = estaActivo ? 'desactivar' : 'reactivar';
+  const icono  = estaActivo ? 'warning' : 'question';
+  const color  = estaActivo ? '#D35400' : '#1E8449';
+  const btnTxt = estaActivo
+    ? '<i class="fas fa-user-slash me-1"></i>Sí, desactivar'
+    : '<i class="fas fa-user-check me-1"></i>Sí, reactivar';
+
+  IpsConfirmar({
+    titulo : estaActivo ? '¿Desactivar paciente?' : '¿Reactivar paciente?',
+    texto  : `El paciente <strong>${nombre}</strong> será ${estaActivo ? 'desactivado y no aparecerá en la lista' : 'reactivado y volverá a estar disponible'}.`,
+    icono  : icono,
+    btnOk  : btnTxt,
+    colorOk: color
+  }).then(r => {
+    if (r.isConfirmed) document.getElementById('formToggle' + id).submit();
+  });
+}
+
+// ── Eliminar paciente ─────────────────────────────────
+function eliminarPaciente(id, nombre) {
+  Swal.fire({
+    title: '¿Eliminar permanentemente?',
+    html : `
+      <p>Se eliminará <strong>${nombre}</strong> junto con:</p>
+      <ul style="text-align:left;margin:10px auto;display:inline-block;color:#555">
+        <li><i class="fas fa-file-medical me-2 text-danger"></i>Su historia clínica</li>
+        <li><i class="fas fa-calendar-times me-2 text-danger"></i>Sus citas médicas</li>
+      </ul>
+      <p style="color:#C0392B;font-weight:600">Esta acción no se puede deshacer.</p>
+    `,
+    icon: 'error',
+    showCancelButton: true,
+    confirmButtonColor: '#C0392B',
+    cancelButtonColor : '#6c757d',
+    confirmButtonText : '<i class="fas fa-trash me-1"></i>Sí, eliminar todo',
+    cancelButtonText  : '<i class="fas fa-times me-1"></i>Cancelar',
+    reverseButtons: true,
+    customClass: { popup: 'swal-ips-popup' }
+  }).then(r => {
+    if (r.isConfirmed) document.getElementById('formEliminar' + id).submit();
+  });
+}
+</script>
+{% endblock scripts %}

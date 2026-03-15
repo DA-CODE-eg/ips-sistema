@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body { 
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #ff9800;
+            padding-bottom: 15px;
+        }
+        h1 { 
+            color: #ff9800;
+            margin: 0;
+            font-size: 24pt;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 10pt;
+            margin-top: 5px;
+        }
+        .info-box {
+            background-color: #fff8e1;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ff9800;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            text-align: left;
+        }
+        th { 
+            background-color: #ff9800;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 9pt;
+            color: #999;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background-color: #fff8e1;
+            border-radius: 5px;
+            flex: 1;
+            margin: 0 5px;
+            border: 2px solid #ff9800;
+        }
+        .stat-number {
+            font-size: 24pt;
+            font-weight: bold;
+            color: #ff9800;
+        }
+        .stat-label {
+            font-size: 9pt;
+            color: #666;
+            margin-top: 5px;
+        }
+        .medicos-list {
+            font-size: 9pt;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💉 IPS FULANO</h1>
+        <div class="subtitle">Reporte de Especialidades Médicas</div>
+    </div>
+
+    <div class="info-box">
+        <strong>Fecha de generación:</strong> {{ fecha_generacion }}<br>
+        <strong>Total de especialidades:</strong> {{ especialidades|length }}
+    </div>
+
+    {% if especialidades %}
+    <!-- Estadísticas -->
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-number">{{ especialidades|length }}</div>
+            <div class="stat-label">Total Especialidades</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">
+                {% set con_citas = namespace(count=0) %}
+                {% for esp in especialidades %}
+                    {% if esp.citas|length > 0 %}
+                        {% set con_citas.count = con_citas.count + 1 %}
+                    {% endif %}
+                {% endfor %}
+                {{ con_citas.count }}
+            </div>
+            <div class="stat-label">Con Citas Activas</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">
+                {% set total_citas = namespace(count=0) %}
+                {% for esp in especialidades %}
+                    {% set total_citas.count = total_citas.count + esp.citas|length %}
+                {% endfor %}
+                {{ total_citas.count }}
+            </div>
+            <div class="stat-label">Total de Citas</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 10%;">#</th>
+                <th style="width: 40%;">Especialidad</th>
+                <th style="width: 20%;" class="text-center">Total Citas</th>
+                <th style="width: 30%;">Médicos Asignados</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for esp in especialidades %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><strong>{{ esp.nombre }}</strong></td>
+                <td style="text-align: center;">
+                    <strong>{{ esp.citas|length }}</strong>
+                </td>
+                <td>
+                    {% set medicos_ids = [] %}
+                    {% for cita in esp.citas %}
+                        {% if cita.medico_id not in medicos_ids %}
+                            {% set _ = medicos_ids.append(cita.medico_id) %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if medicos_ids|length > 0 %}
+                        <div class="medicos-list">
+                            {% for cita in esp.citas %}
+                                {% if loop.first or cita.medico.nombre not in printed_medicos %}
+                                    • {{ cita.medico.nombre }}<br>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <span style="color: #999;">Sin médicos asignados</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Resumen adicional -->
+    <div style="margin-top: 30px; padding: 15px; background-color: #f5f5f5; border-left: 4px solid #ff9800;">
+        <h3 style="color: #ff9800; margin-top: 0;">Resumen Ejecutivo</h3>
+        <p><strong>Especialidad más solicitada:</strong> 
+            {% set max_citas = namespace(esp='N/A', count=0) %}
+            {% for esp in especialidades %}
+                {% if esp.citas|length > max_citas.count %}
+                    {% set max_citas.esp = esp.nombre %}
+                    {% set max_citas.count = esp.citas|length %}
+                {% endif %}
+            {% endfor %}
+            {{ max_citas.esp }} ({{ max_citas.count }} citas)
+        </p>
+        <p><strong>Especialidades sin citas:</strong> 
+            {% set sin_citas = namespace(count=0) %}
+            {% for esp in especialidades %}
+                {% if esp.citas|length == 0 %}
+                    {% set sin_citas.count = sin_citas.count + 1 %}
+                {% endif %}
+            {% endfor %}
+            {{ sin_citas.count }}
+        </p>
+    </div>
+    {% else %}
+    <p style="text-align: center; color: #999; padding: 40px;">
+        No hay especialidades registradas en el sistema.
+    </p>
+    {% endif %}
+
+    <div class="footer">
+        <p>Este documento fue generado automáticamente por el Sistema de Gestión IPS FULANO</p>
+        <p>© {{ fecha_generacion.split('/')[2].split(' ')[0] }} IPS FULANO - Todos los derechos reservados</p>
+    </div>
+</body>
+</html>

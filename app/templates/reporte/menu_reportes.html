@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-earmark-bar-graph"></i> Centro de Reportes</h2>
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver al Dashboard
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Reporte de Pacientes -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm hover-card">
+                <div class="card-header bg-danger text-white text-center">
+                    <i class="bi bi-people-fill" style="font-size: 2rem;"></i>
+                    <h5 class="mt-2 mb-0">Reporte de Pacientes</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Genera un reporte completo con todos los pacientes registrados en el sistema, 
+                        incluyendo información de contacto y estado.
+                    </p>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check-circle text-success"></i> Listado completo</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Datos de contacto</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Estados activos/inactivos</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Estadísticas generales</li>
+                    </ul>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <button class="btn btn-danger w-100" onclick="generarReporte('pacientes')">
+                        <i class="fas fa-file-pdf me-1"></i> Generar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reporte de Citas -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm hover-card">
+                <div class="card-header bg-success text-white text-center">
+                    <i class="bi bi-calendar-check" style="font-size: 2rem;"></i>
+                    <h5 class="mt-2 mb-0">Reporte de Citas</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Consulta todas las citas médicas programadas, con detalles de pacientes, 
+                        médicos, especialidades y estados.
+                    </p>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check-circle text-success"></i> Todas las citas</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Información de médicos</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Estados de las citas</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Estadísticas por estado</li>
+                    </ul>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <button class="btn btn-success w-100" onclick="generarReporte('citas')">
+                        <i class="fas fa-file-pdf me-1"></i> Generar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reporte de Especialidades (solo admin) -->
+        {% if current_user.rol == 'admin' %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm hover-card">
+                <div class="card-header bg-warning text-dark text-center">
+                    <i class="bi bi-heart-pulse" style="font-size: 2rem;"></i>
+                    <h5 class="mt-2 mb-0">Reporte de Especialidades</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Reporte administrativo de todas las especialidades médicas disponibles 
+                        y su uso en el sistema.
+                    </p>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check-circle text-success"></i> Todas las especialidades</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Citas por especialidad</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Médicos asignados</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Estadísticas de uso</li>
+                    </ul>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <button class="btn btn-warning w-100" onclick="generarReporte('especialidades')">
+                        <i class="fas fa-file-pdf me-1"></i> Generar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Información adicional -->
+    <div class="alert alert-info mt-4">
+        <h5><i class="bi bi-info-circle"></i> Información sobre los Reportes</h5>
+        <ul class="mb-0">
+            <li>Los reportes se generan en formato PDF para facilitar su impresión y distribución.</li>
+            <li>Cada reporte incluye la fecha y hora de generación.</li>
+            <li>Los datos se extraen en tiempo real desde la base de datos.</li>
+            <li>Los reportes se abren en una nueva pestaña del navegador.</li>
+        </ul>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <h4 class="mb-3"><i class="bi bi-graph-up"></i> Estadísticas Rápidas</h4>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-primary">
+                <div class="card-body text-center">
+                    <h2>{{ stats.total_pacientes }}</h2>
+                    <p class="mb-0">Total Pacientes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-success">
+                <div class="card-body text-center">
+                    <h2>{{ stats.total_citas }}</h2>
+                    <p class="mb-0">Total Citas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h2>{{ stats.total_especialidades }}</h2>
+                    <p class="mb-0">Especialidades</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-info">
+                <div class="card-body text-center">
+                    <h2>{{ stats.citas_pendientes }}</h2>
+                    <p class="mb-0">Citas Pendientes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+}
+</style>
+
+<!-- Formularios ocultos con filtros de fecha -->
+<form id="form_pacientes" method="GET" action="{{ url_for('main.reporte_pacientes_pdf') }}" target="_blank" style="display:none">
+    <input type="hidden" name="fecha_inicio" id="fi_pacientes">
+    <input type="hidden" name="fecha_fin"    id="ff_pacientes">
+</form>
+<form id="form_citas" method="GET" action="{{ url_for('main.reporte_citas_pdf') }}" target="_blank" style="display:none">
+    <input type="hidden" name="fecha_inicio" id="fi_citas">
+    <input type="hidden" name="fecha_fin"    id="ff_citas">
+</form>
+<form id="form_especialidades" method="GET" action="{{ url_for('main.reporte_especialidades_pdf') }}" target="_blank" style="display:none">
+    <input type="hidden" name="fecha_inicio" id="fi_especialidades">
+    <input type="hidden" name="fecha_fin"    id="ff_especialidades">
+</form>
+
+{% endblock content %}
+
+{% block scripts %}
+<script>
+const hoy       = new Date().toISOString().split('T')[0];
+const hace30    = new Date(); hace30.setDate(hace30.getDate()-30);
+const hace30Str = hace30.toISOString().split('T')[0];
+const hace90    = new Date(); hace90.setDate(hace90.getDate()-90);
+const hace90Str = hace90.toISOString().split('T')[0];
+
+const titulos = {
+    pacientes:      { label:'👥 Reporte de Pacientes',     color:'#C0392B' },
+    citas:          { label:'📅 Reporte de Citas',          color:'#1E8449' },
+    especialidades: { label:'🩺 Reporte de Especialidades', color:'#D35400' },
+};
+
+function generarReporte(tipo) {
+    const t = titulos[tipo];
+    Swal.fire({
+        title: t.label,
+        html: `
+        <p style="color:#555;margin-bottom:16px">¿Qué período deseas incluir en el PDF?</p>
+        <div style="display:flex;flex-direction:column;gap:10px;text-align:left">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border-radius:8px;border:2px solid ${t.color};background:#fafafa" id="lbl_todo_${tipo}">
+            <input type="radio" name="rango_${tipo}" value="todo" checked style="accent-color:${t.color};width:16px;height:16px">
+            <span><strong>📋 Todo el historial</strong><br><small style="color:#888">Sin filtro de fechas</small></span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border-radius:8px;border:2px solid #ddd;background:#fff" id="lbl_30d_${tipo}">
+            <input type="radio" name="rango_${tipo}" value="30d" style="accent-color:#D35400;width:16px;height:16px">
+            <span><strong>🕐 Últimos 30 días</strong><br><small style="color:#888">${hace30Str} → ${hoy}</small></span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border-radius:8px;border:2px solid #ddd;background:#fff" id="lbl_90d_${tipo}">
+            <input type="radio" name="rango_${tipo}" value="90d" style="accent-color:#1A5276;width:16px;height:16px">
+            <span><strong>📆 Últimos 90 días</strong><br><small style="color:#888">${hace90Str} → ${hoy}</small></span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border-radius:8px;border:2px solid #ddd;background:#fff" id="lbl_custom_${tipo}">
+            <input type="radio" name="rango_${tipo}" value="custom" style="accent-color:#1E8449;width:16px;height:16px">
+            <span><strong>📅 Rango personalizado</strong></span>
+          </label>
+          <div id="divFechas_${tipo}" style="display:none;background:#F9F9F9;padding:12px;border-radius:8px;border:1px solid #ddd">
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <div style="flex:1;min-width:130px">
+                <label style="font-size:12px;font-weight:600;color:#555">Desde</label>
+                <input type="date" id="fi_custom_${tipo}" max="${hoy}"
+                       style="width:100%;padding:6px 10px;border:1px solid #ccc;border-radius:6px;margin-top:4px">
+              </div>
+              <div style="flex:1;min-width:130px">
+                <label style="font-size:12px;font-weight:600;color:#555">Hasta</label>
+                <input type="date" id="ff_custom_${tipo}" max="${hoy}" value="${hoy}"
+                       style="width:100%;padding:6px 10px;border:1px solid #ccc;border-radius:6px;margin-top:4px">
+              </div>
+            </div>
+          </div>
+        </div>`,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-file-pdf me-1"></i>Generar PDF',
+        confirmButtonColor: t.color,
+        cancelButtonText: '<i class="fas fa-times me-1"></i>Cancelar',
+        cancelButtonColor: '#6c757d',
+        reverseButtons: true,
+        customClass: { popup: 'swal-ips-popup' },
+        didOpen: () => {
+            document.querySelectorAll(`input[name="rango_${tipo}"]`).forEach(r => {
+                r.addEventListener('change', () => {
+                    document.getElementById(`divFechas_${tipo}`).style.display =
+                        r.value === 'custom' ? 'block' : 'none';
+                    ['todo','30d','90d','custom'].forEach(k => {
+                        const el = document.getElementById(`lbl_${k}_${tipo}`);
+                        if(el){ el.style.borderColor='#ddd'; el.style.background='#fff'; }
+                    });
+                    const sel = document.getElementById(`lbl_${r.value}_${tipo}`);
+                    if(sel){ sel.style.borderColor=t.color; sel.style.background='#fafafa'; }
+                });
+            });
+        },
+        preConfirm: () => {
+            const rango = document.querySelector(`input[name="rango_${tipo}"]:checked`).value;
+            if (rango === 'custom') {
+                const fi = document.getElementById(`fi_custom_${tipo}`).value;
+                const ff = document.getElementById(`ff_custom_${tipo}`).value;
+                if (!fi) { Swal.showValidationMessage('Ingresa la fecha de inicio'); return false; }
+                if (!ff) { Swal.showValidationMessage('Ingresa la fecha de fin');    return false; }
+                if (fi > ff) { Swal.showValidationMessage('La fecha inicio no puede ser mayor que la fin'); return false; }
+                return { rango, fi, ff };
+            }
+            return { rango };
+        }
+    }).then(r => {
+        if (!r.isConfirmed) return;
+        const { rango, fi, ff } = r.value;
+        document.getElementById(`fi_${tipo}`).value = rango==='todo' ? '' : rango==='30d' ? hace30Str : rango==='90d' ? hace90Str : fi;
+        document.getElementById(`ff_${tipo}`).value = rango==='todo' ? '' : rango==='30d' ? hoy       : rango==='90d' ? hoy       : ff;
+        document.getElementById(`form_${tipo}`).submit();
+    });
+}
+</script>
+{% endblock scripts %}

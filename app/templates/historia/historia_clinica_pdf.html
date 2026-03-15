@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @bottom-right {
+                content: "Página " counter(page) " de " counter(pages);
+            }
+        }
+        body { 
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            color: #333;
+            line-height: 1.6;
+        }
+        .header {
+            border-bottom: 3px solid #2196F3;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo-section {
+            text-align: center;
+        }
+        h1 { 
+            color: #2196F3;
+            margin: 0;
+            font-size: 28pt;
+            text-align: center;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 12pt;
+            text-align: center;
+            margin-top: 5px;
+        }
+        .patient-info {
+            background-color: #f5f5f5;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-left: 4px solid #2196F3;
+            page-break-inside: avoid;
+        }
+        .patient-info table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .patient-info td {
+            padding: 5px 10px;
+            vertical-align: top;
+        }
+        .patient-info strong {
+            color: #2196F3;
+        }
+        .section-title {
+            background-color: #2196F3;
+            color: white;
+            padding: 10px 15px;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 12pt;
+        }
+        .content-section {
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            background-color: #fafafa;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 10pt;
+            line-height: 1.8;
+            page-break-inside: avoid;
+        }
+        .metadata {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            font-size: 9pt;
+            page-break-inside: avoid;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+            page-break-inside: avoid;
+        }
+        .signature-section {
+            margin-top: 60px;
+            page-break-inside: avoid;
+        }
+        .signature-line {
+            border-top: 2px solid #333;
+            width: 300px;
+            margin: 60px auto 10px auto;
+        }
+        .signature-text {
+            text-align: center;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 80pt;
+            color: rgba(33, 150, 243, 0.05);
+            z-index: -1;
+            font-weight: bold;
+        }
+        .empty-content {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="watermark">IPS FULANO</div>
+    
+    <div class="header">
+        <div class="logo-section">
+            <h1>🏥 IPS FULANO</h1>
+            <div class="subtitle">Historia Clínica del Paciente</div>
+        </div>
+    </div>
+
+    <!-- Información del Paciente -->
+    <div class="patient-info">
+        <table>
+            <tr>
+                <td width="50%">
+                    <strong>📋 NOMBRE COMPLETO:</strong><br>
+                    {{ paciente.nombre }}
+                </td>
+                <td width="25%">
+                    <strong>🆔 IDENTIFICACIÓN:</strong><br>
+                    {{ paciente.identificacion }}
+                </td>
+                <td width="25%">
+                    <strong>⚧ SEXO:</strong><br>
+                    {{ paciente.sexo or 'No registrado' }}
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <strong>📅 FECHA DE NACIMIENTO:</strong><br>
+                    {{ paciente.fecha_nacimiento.strftime('%d/%m/%Y') if paciente.fecha_nacimiento else 'No registrada' }}
+                    {% if paciente.fecha_nacimiento %}
+                        ({{ edad }} años)
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>📞 TELÉFONO:</strong><br>
+                    {{ paciente.telefono or 'No registrado' }}
+                </td>
+                <td>
+                    <strong>📧 EMAIL:</strong><br>
+                    {{ paciente.email or 'No registrado' }}
+                </td>
+            </tr>
+            {% if paciente.direccion %}
+            <tr>
+                <td colspan="3">
+                    <strong>🏠 DIRECCIÓN:</strong><br>
+                    {{ paciente.direccion }}
+                </td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <!-- Contenido de la Historia Clínica -->
+    <div class="section-title">
+        📝 HISTORIA CLÍNICA
+        {% if solo_recientes %}
+        <small style="font-size: 10pt; font-weight: normal;">(Entradas recientes - últimos 30 días)</small>
+        {% endif %}
+    </div>
+
+    {% if entradas %}
+        {% for entrada in entradas %}
+        <div class="content-section">
+            <div style="border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 15px;">
+                <strong>📅 Fecha:</strong> {{ entrada.fecha.strftime('%d/%m/%Y %H:%M') }}<br>
+                <strong>👨‍⚕️ Profesional:</strong> {{ entrada.autor.nombre }} ({{ entrada.autor.rol }})
+            </div>
+            {{ entrada.contenido }}
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="empty-content">
+        <p>⚠️ Esta historia clínica aún no tiene entradas registradas.</p>
+    </div>
+    {% endif %}
+
+    <!-- Metadata -->
+    <div class="metadata">
+        <strong>ℹ️ INFORMACIÓN DEL DOCUMENTO:</strong><br>
+        <strong>Fecha de generación:</strong> {{ fecha_generacion }}<br>
+        <strong>Total de entradas:</strong> {{ entradas|length }}<br>
+        {% if entradas %}
+        <strong>Primera entrada:</strong> {{ entradas[-1].fecha.strftime('%d/%m/%Y %H:%M') }}<br>
+        <strong>Última entrada:</strong> {{ entradas[0].fecha.strftime('%d/%m/%Y %H:%M') }}<br>
+        {% endif %}
+        <strong>Estado del paciente:</strong> {{ 'Activo' if paciente.activo else 'Inactivo' }}
+    </div>
+
+    <!-- Sección de Firma -->
+    {% if entradas %}
+    <div class="signature-section">
+        <div class="signature-line"></div>
+        <div class="signature-text">
+            {{ entradas[0].autor.nombre }}<br>
+            {{ entradas[0].autor.rol|upper }}<br>
+            IPS FULANO
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="footer">
+        <p><strong>IPS FULANO - Sistema de Gestión de Historias Clínicas</strong></p>
+        <p>Este documento es confidencial y contiene información médica protegida</p>
+        <p>Generado automáticamente el {{ fecha_generacion }}</p>
+        <p style="font-size: 8pt; color: #999;">
+            © {{ fecha_generacion.split('/')[2].split(' ')[0] }} IPS FULANO - Todos los derechos reservados
+        </p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Citas Médicas</h2>
+
+<a href="{{ url_for('main.crear_cita') }}" class="btn btn-ips mb-3">+ Nueva Cita</a>
+
+{% if citas %}
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Paciente</th>
+      <th>Médico</th>
+      <th>Especialidad</th>
+      <th>Fecha</th>
+      <th>Estado</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in citas %}
+    <tr>
+      <td>{{ c.paciente.nombre }}</td>
+      <td>{{ c.medico.nombre }}</td>
+      <td>{{ c.especialidad.nombre }}</td>
+      <td>{{ c.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>
+        {% if c.estado == 'Pendiente' %}
+          <span class="badge bg-warning">Pendiente</span>
+        {% elif c.estado == 'Realizada' %}
+          <span class="badge bg-success">Realizada</span>
+        {% else %}
+          <span class="badge bg-secondary">Cancelada</span>
+        {% endif %}
+      </td>
+      <td>
+        <div class="btn-group" role="group">
+          <a href="{{ url_for('main.tiquete_cita', id=c.id) }}" target="_blank" class="btn btn-sm btn-outline-info">Imprimir Ticket</a>
+          {% if c.estado == 'Pendiente' %}
+          <button type="button" class="btn btn-sm btn-success" onclick="marcarRealizada({{ c.id }}, '{{ c.paciente.nombre }}')">Realizada</button>
+          <form id="formMarcar{{ c.id }}" action="{{ url_for('main.marcar_cita_realizada', id=c.id) }}" method="POST" style="display: none;"></form>
+          {% endif %}
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarCita({{ c.id }}, '{{ c.paciente.nombre }}')">Eliminar</button>
+          <form id="formEliminarCita{{ c.id }}" action="{{ url_for('main.eliminar_cita', id=c.id) }}" method="POST" style="display: none;"></form>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">No hay citas agendadas.</p>
+{% endif %}
+
+<script>
+function marcarRealizada(citaId, pacienteNombre) {
+    Swal.fire({
+        title: '¿Marcar como realizada?',
+        text: `¿Confirmar que ${pacienteNombre} asistió a la cita?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, marcar realizada',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('formMarcar' + citaId).submit();
+        }
+    });
+}
+
+function eliminarCita(citaId, pacienteNombre) {
+    Swal.fire({
+        title: '¿Eliminar cita?',
+        text: `¿Eliminar la cita de ${pacienteNombre}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('formEliminarCita' + citaId).submit();
+        }
+    });
+}
+</script>
+
+{% endblock %}

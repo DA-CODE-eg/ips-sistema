@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-5">
+    <div class="card border-danger shadow">
+      <div class="card-header bg-danger text-white text-center">
+        <i class="fas fa-trash me-2"></i>Confirmar eliminación
+      </div>
+      <div class="card-body p-4">
+        <p class="text-center mb-3" style="font-size:14px;">
+          Se envió un código a <strong>{{ correo.email }}</strong>.<br>
+          Ingrésalo para confirmar la eliminación.
+        </p>
+        <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Código de confirmación</label>
+            <input type="text" name="codigo" class="form-control form-control-lg text-center"
+                   maxlength="6" placeholder="000000" autocomplete="off" required autofocus
+                   style="letter-spacing:8px;font-size:24px;font-weight:bold;">
+            <small class="text-muted">⏱️ Expira en 5 minutos</small>
+          </div>
+          <button type="submit" class="btn btn-danger w-100">
+            <i class="fas fa-trash me-2"></i>Confirmar eliminación
+          </button>
+        </form>
+        <div class="text-center mt-3">
+          <a href="{{ url_for('main.lista_correos_backup') }}" class="text-muted" style="font-size:13px;">
+            Cancelar
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

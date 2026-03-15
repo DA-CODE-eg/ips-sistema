@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2><i class="fas fa-download text-success me-2"></i>Backup del Sistema</h2>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card border-success">
+      <div class="card-header bg-success text-white">
+        <i class="fas fa-archive me-2"></i>Generar Backup Manual
+      </div>
+      <div class="card-body">
+        <p>Genera un respaldo completo que incluye:</p>
+        <ul>
+          <li>📋 Todos los pacientes (CSV)</li>
+          <li>📅 Historial de citas (CSV)</li>
+          <li>🏥 Historias clínicas (CSV)</li>
+          <li>🔍 Log de auditoría (CSV)</li>
+          <li>📄 Archivo de metadatos (JSON)</li>
+          <li>📁 PDFs de historias clínicas</li>
+          <li>📊 PDFs de reportes generales</li>
+        </ul>
+        <p class="text-muted small">El ZIP se guarda en el sistema y se envía a todos los correos de backup verificados.</p>
+        <form method="POST" action="{{ url_for('main.generar_backup') }}"
+              onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').innerHTML='<i class=\'fas fa-spinner fa-spin\'></i> Generando...'">
+          <button type="submit" class="btn btn-success w-100">
+            <i class="fas fa-download me-2"></i>Generar Backup Ahora
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card border-info">
+      <div class="card-header bg-info text-white">
+        <i class="fas fa-info-circle me-2"></i>Información
+      </div>
+      <div class="card-body">
+        <p><strong>⏰ Backup automático:</strong> Cada hora, todos los días sin parar</p>
+        <p><strong>📧 Envío:</strong> ZIP a todos los correos de backup verificados</p>
+        <p><strong>💾 Almacenamiento:</strong> Base de datos del sistema</p>
+        <p><strong>📦 Retención:</strong> Últimos 20 backups visibles en este panel</p>
+        <p><strong>📊 Monitoreo Neon:</strong> Diario a las 8am — alerta si se llena</p>
+        <hr>
+        <p class="text-muted small">
+          <i class="fas fa-shield-alt me-1"></i>
+          En caso de pérdida total del sistema, con el archivo ZIP de backup
+          el técnico puede restaurar todos los datos.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header bg-dark text-white">
+    <i class="fas fa-history me-2"></i>Historial de Backups (últimos 20)
+  </div>
+  <div class="card-body p-0">
+    {% if backups %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Archivo</th>
+            <th>Tamaño</th>
+            <th>Estado</th>
+            <th>Descarga</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in backups %}
+          <tr>
+            <td>{{ b.creado_en.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>
+              <span class="badge {{ 'bg-primary' if b.tipo == 'manual' else 'bg-success' }}">
+                {{ '🖐 Manual' if b.tipo == 'manual' else '⚙️ Automático' }}
+              </span>
+            </td>
+            <td><small class="font-monospace">{{ b.archivo_nombre or '—' }}</small></td>
+            <td>
+              {% if b.tamano_bytes %}
+                {{ (b.tamano_bytes / 1024)|round(1) }} KB
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if b.estado == 'exitoso' %}
+                <span class="badge bg-success">✅ Exitoso</span>
+              {% elif b.estado == 'fallido' %}
+                <span class="badge bg-danger" title="{{ b.error_mensaje }}">❌ Fallido</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">⏳ Generando</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if b.estado == 'exitoso' %}
+                <a href="{{ url_for('main.descargar_backup', backup_id=b.id) }}" class="btn btn-sm btn-outline-success">
+                  <i class="fas fa-download"></i> Descargar
+                </a>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="fas fa-archive fa-3x mb-3"></i>
+      <p>No hay backups generados aún. Genera el primero ahora.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

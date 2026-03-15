@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%);
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  .dashboard-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .dashboard-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12) !important;
+  }
+
+  .dashboard-card .card-header {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dashboard-card .btn {
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 8px 20px;
+    transition: background 0.2s;
+  }
+
+  .watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    opacity: 0.08;
+    font-size: 80px;
+    font-weight: 800;
+    color: #333;
+    pointer-events: none;
+    z-index: 0;
+    transform: rotate(-30deg);
+    font-family: Georgia, serif;
+  }
+
+  .dashboard-grid {
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-title {
+    margin-bottom: 2rem;
+    color: #2c3e50;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+
+  .card-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  @media (max-width: 768px) {
+    .watermark {
+      font-size: 60px;
+      bottom: 10px;
+      right: 10px;
+    }
+  }
+</style>
+
+<!-- Marca de agua personalizada -->
+<div class="watermark">IPS FULANO<br>FUNDACIÓN EUDES</div>
+
+<div class="container py-5 dashboard-grid">
+  <h2 class="section-title">✨ Panel de Administración</h2>
+
+  <div class="row g-4">
+    <!-- Pacientes -->
+    <div class="col-md-3">
+      <div class="card dashboard-card text-bg-primary">
+        <div class="card-header">
+          <i class="fas fa-user-injured"></i> Pacientes
+        </div>
+        <div class="card-body">
+          <a href="{{ url_for('main.lista_pacientes') }}" class="btn btn-light">
+            <i class="fas fa-edit me-2"></i>Gestionar
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Citas (condicional) -->
+    {% if current_user.rol.nombre != 'recepcionista' %}
+    <div class="col-md-3">
+      <div class="card dashboard-card text-bg-success">
+        <div class="card-header">
+          <i class="fas fa-calendar-check"></i> Citas Médicas
+          {% if stats.citas_solicitadas > 0 %}
+          <span class="badge bg-danger ms-auto">{{ stats.citas_solicitadas }} nueva{{ 's' if stats.citas_solicitadas > 1 else '' }}</span>
+          {% endif %}
+        </div>
+        <div class="card-body flex-column gap-2">
+          {% if stats.citas_solicitadas > 0 %}
+          <a href="{{ url_for('main.lista_citas', estado='Solicitada') }}" class="btn btn-danger w-100 mb-2">
+            <i class="fas fa-bell me-1"></i> Ver solicitudes ({{ stats.citas_solicitadas }})
+          </a>
+          {% endif %}
+          <a href="{{ url_for('main.lista_citas') }}" class="btn btn-light">
+            <i class="fas fa-eye me-2"></i> Ver todas
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Opciones Admin -->
+    {% if current_user.rol.nombre == 'admin' %}
+    <div class="col-md-3">
+      <div class="card dashboard-card text-bg-danger">
+        <div class="card-header">
+          <i class="fas fa-users"></i> Usuarios
+        </div>
+        <div class="card-body">
+          <a href="{{ url_for('main.lista_usuarios') }}" class="btn btn-light">
+            <i class="fas fa-user-plus me-2"></i> Crear/Editar
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card dashboard-card text-bg-warning">
+        <div class="card-header">
+          <i class="fas fa-stethoscope"></i> Especialidades
+        </div>
+        <div class="card-body">
+          <a href="{{ url_for('main.lista_especialidades') }}" class="btn btn-light">
+            <i class="fas fa-cog me-2"></i> Configurar
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card dashboard-card text-bg-secondary">
+        <div class="card-header">
+          <i class="fas fa-user-shield"></i> Roles
+        </div>
+        <div class="card-body">
+          <a href="{{ url_for('main.lista_roles') }}" class="btn btn-light">
+            <i class="fas fa-cog me-2"></i> Gestionar
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Reportes (para todos) -->
+    <div class="col-md-3">
+      <div class="card dashboard-card text-bg-info">
+        <div class="card-header">
+          <i class="fas fa-file-chart-column"></i> Reportes
+        </div>
+        <div class="card-body">
+          <a href="{{ url_for('main.menu_reportes') }}" class="btn btn-light">
+            <i class="fas fa-download me-2"></i> Generar
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

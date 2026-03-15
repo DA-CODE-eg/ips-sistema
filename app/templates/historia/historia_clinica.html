@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+
+{% block title %}Historia Clínica - {{ paciente.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con información del paciente -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-0">
+                        <i class="bi bi-file-medical"></i> Historia Clínica
+                    </h4>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="{{ url_for('main.lista_pacientes') }}" class="btn btn-light btn-sm">
+                        <i class="bi bi-arrow-left"></i> Volver a Pacientes
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <strong><i class="bi bi-person"></i> Paciente:</strong><br>
+                    {{ paciente.nombre }}
+                </div>
+                <div class="col-md-2">
+                    <strong><i class="bi bi-card-text"></i> Identificación:</strong><br>
+                    {{ paciente.identificacion }}
+                </div>
+                <div class="col-md-2">
+                    <strong><i class="bi bi-calendar"></i> Fecha Nacimiento:</strong><br>
+                    {{ paciente.fecha_nacimiento.strftime('%d/%m/%Y') if paciente.fecha_nacimiento else 'No registrada' }}
+                </div>
+                <div class="col-md-2">
+                    <strong><i class="bi bi-gender-ambiguous"></i> Sexo:</strong><br>
+                    {{ paciente.sexo or 'No registrado' }}
+                </div>
+                <div class="col-md-3">
+                    <strong><i class="bi bi-telephone"></i> Teléfono:</strong><br>
+                    {{ paciente.telefono or 'No registrado' }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Lista de Entradas de Historia Clínica -->
+        <div class="col-md-8">
+            <!-- Formulario para agregar nueva entrada -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Agregar Nueva Entrada</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="formNuevaEntrada">
+                        <div class="mb-3">
+                            <label for="contenido" class="form-label">
+                                <strong>Contenido de la Nueva Entrada</strong>
+                            </label>
+                            <textarea
+                                name="contenido"
+                                id="contenido"
+                                rows="10"
+                                class="form-control font-monospace"
+                                placeholder="Escriba aquí la nueva entrada para la historia clínica...
+
+Ejemplo de estructura:
+
+MOTIVO DE CONSULTA:
+[Descripción del motivo]
+
+EXAMEN FÍSICO:
+[Hallazgos del examen]
+
+DIAGNÓSTICO:
+[Diagnóstico]
+
+TRATAMIENTO:
+[Tratamiento indicado]
+
+OBSERVACIONES:
+[Notas adicionales]" required></textarea>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" id="btnAgregar">
+                                <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                                <i class="bi bi-save"></i> Agregar Entrada
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lista de entradas existentes -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Entradas de la Historia Clínica</h5>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-success btn-sm" {% if not entradas %}disabled{% endif %}
+                                onclick="abrirFiltroFecha('imprimir')">
+                            <i class="fas fa-print me-1"></i> Imprimir PDF
+                        </button>
+                        <button class="btn btn-info btn-sm text-white" {% if not entradas %}disabled{% endif %}
+                                onclick="abrirFiltroFecha('descargar')">
+                            <i class="fas fa-download me-1"></i> Descargar PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Formularios ocultos para PDF con fechas -->
+                <form id="formImprimirFecha" method="GET"
+                      action="{{ url_for('main.imprimir_historia', id=paciente.id) }}"
+                      target="_blank" style="display:none;">
+                    <input type="hidden" name="fecha_inicio" id="fi_imprimir">
+                    <input type="hidden" name="fecha_fin"    id="ff_imprimir">
+                    <input type="hidden" name="solo_recientes" id="sr_imprimir" value="0">
+                </form>
+                <form id="formDescargarFecha" method="GET"
+                      action="{{ url_for('main.descargar_historia', id=paciente.id) }}"
+                      style="display:none;">
+                    <input type="hidden" name="fecha_inicio" id="fi_descargar">
+                    <input type="hidden" name="fecha_fin"    id="ff_descargar">
+                    <input type="hidden" name="solo_recientes" id="sr_descargar" value="0">
+                </form>
+                <div class="card-body">
+                    {% if entradas %}
+                    <div class="timeline">
+                        {% for entrada in entradas %}
+                        <div class="timeline-item mb-4 pb-4 border-bottom">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <strong>{{ entrada.autor.nombre }}</strong>
+                                    <small class="text-muted">({{ entrada.autor.rol }})</small>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar"></i> {{ entrada.fecha.strftime('%d/%m/%Y %H:%M') }}
+                                    </small>
+                                </div>
+                                {% if entrada.autor_id == current_user.id %}
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('main.editar_entrada_historia', id=paciente.id, entrada_id=entrada.id) }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i> Editar
+                                    </a>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="eliminarEntrada({{ entrada.id }}, '{{ paciente.nombre }}')">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </button>
+                                    <form id="formEliminar{{ entrada.id }}"
+                                          action="{{ url_for('main.eliminar_entrada_historia', id=paciente.id, entrada_id=entrada.id) }}"
+                                          method="POST"
+                                          style="display: none;">
+                                    </form>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="entrada-contenido">
+                                <pre class="border p-3 bg-light" style="white-space: pre-wrap; font-family: inherit;">{{ entrada.contenido }}</pre>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-file-earmark-text" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-3">No hay entradas en la historia clínica</p>
+                        <p class="text-muted">Use el formulario arriba para agregar la primera entrada</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Alertas y ayudas -->
+            <div class="alert alert-info mt-3">
+                <h6><i class="bi bi-lightbulb"></i> Consejos para las entradas:</h6>
+                <ul class="mb-0">
+                    <li>Cada entrada es independiente y puede ser editada solo por su autor</li>
+                    <li>Sea claro y conciso en sus anotaciones</li>
+                    <li>Use terminología médica apropiada</li>
+                    <li>Registre fecha y hora de cada evento importante</li>
+                    <li>Las entradas se ordenan por fecha descendente (más recientes primero)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Panel lateral de información -->
+        <div class="col-md-4">
+            <!-- Estadísticas de la historia -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="bi bi-graph-up"></i> Estadísticas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total de entradas:</span>
+                        <strong>{{ entradas|length }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Entradas propias:</span>
+                        <strong>{{ entradas|selectattr('autor_id', 'equalto', current_user.id)|list|length }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Última entrada:</span>
+                        <strong>{{ entradas[0].fecha.strftime('%d/%m/%Y') if entradas else 'Ninguna' }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Citas relacionadas -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="bi bi-calendar-check"></i> Citas del Paciente</h6>
+                </div>
+                <div class="card-body">
+                    {% if paciente.citas %}
+                        <div class="list-group list-group-flush">
+                            {% for cita in paciente.citas[:5] %}
+                            <div class="list-group-item px-0 py-2">
+                                <small>
+                                    <strong>{{ cita.fecha.strftime('%d/%m/%Y') }}</strong><br>
+                                    {{ cita.especialidad.nombre }}<br>
+                                    Dr(a). {{ cita.medico.nombre }}<br>
+                                    <span class="badge bg-{{ 'success' if cita.estado == 'Realizada' else 'warning' }}">
+                                        {{ cita.estado }}
+                                    </span>
+                                </small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if paciente.citas|length > 5 %}
+                        <small class="text-muted">Y {{ paciente.citas|length - 5 }} más...</small>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted mb-0">No hay citas registradas</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Acciones rápidas -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="bi bi-lightning"></i> Acciones Rápidas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('main.editar_paciente', id=paciente.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Editar Datos del Paciente
+                        </a>
+                        <a href="{{ url_for('main.crear_cita') }}?paciente_id={{ paciente.id }}" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-calendar-plus"></i> Agendar Nueva Cita
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                            <i class="bi bi-printer"></i> Imprimir esta Página
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .card-header, .btn, .alert, .modal { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+}
+</style>
+
+{% endblock content %}
+
+{% block scripts %}
+<script>
+document.getElementById('formNuevaEntrada').addEventListener('submit', function() {
+    const btn = document.getElementById('btnAgregar');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Guardando...';
+});
+
+function eliminarEntrada(entradaId, pacienteNombre) {
+    IpsConfirmar({
+        titulo : '¿Eliminar entrada?',
+        texto  : `¿Está seguro de eliminar esta entrada de la historia de <strong>${pacienteNombre}</strong>?`,
+        icono  : 'warning',
+        btnOk  : '<i class="fas fa-trash me-1"></i>Sí, eliminar'
+    }).then(r => {
+        if (r.isConfirmed) document.getElementById('formEliminar' + entradaId).submit();
+    });
+}
+
+// Fecha mínima = primera entrada, máxima = hoy
+const fechaMin = '{{ entradas[-1].fecha.strftime("%Y-%m-%d") if entradas else "" }}';
+const fechaMax = '{{ now.strftime("%Y-%m-%d") }}';
+
+function abrirFiltroFecha(accion) {
+    const hoy      = fechaMax;
+    const hace30   = new Date(); hace30.setDate(hace30.getDate() - 30);
+    const hace30Str = hace30.toISOString().split('T')[0];
+
+    Swal.fire({
+        title: accion === 'imprimir' ? '🖨️ Imprimir Historia Clínica' : '⬇️ Descargar Historia Clínica',
+        html: `
+        <p style="color:#555;margin-bottom:16px">Selecciona el rango de fechas a incluir en el PDF</p>
+
+        <div style="display:flex;flex-direction:column;gap:12px;text-align:left">
+
+          <!-- Opción rápida: todo -->
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border-radius:8px;border:2px solid #1A5276;background:#EAF4FB">
+            <input type="radio" name="rango" value="todo" checked style="accent-color:#1A5276;width:16px;height:16px">
+            <span><strong>📋 Toda la historia</strong><br><small style="color:#888">Desde el inicio hasta hoy</small></span>
+          </label>
+
+          <!-- Opción rápida: últimos 30 días -->
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border-radius:8px;border:2px solid #ddd;background:#fff" id="lbl30">
+            <input type="radio" name="rango" value="recientes" style="accent-color:#D35400;width:16px;height:16px">
+            <span><strong>🕐 Últimos 30 días</strong><br><small style="color:#888">${hace30Str} → ${hoy}</small></span>
+          </label>
+
+          <!-- Rango personalizado -->
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border-radius:8px;border:2px solid #ddd;background:#fff" id="lblPersonal">
+            <input type="radio" name="rango" value="personalizado" style="accent-color:#1E8449;width:16px;height:16px">
+            <span><strong>📅 Rango personalizado</strong></span>
+          </label>
+
+          <!-- Inputs de fecha (ocultos hasta seleccionar personalizado) -->
+          <div id="divFechas" style="display:none;background:#F9F9F9;padding:12px;border-radius:8px;border:1px solid #ddd">
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <div style="flex:1;min-width:140px">
+                <label style="font-size:12px;font-weight:600;color:#555">Desde</label>
+                <input type="date" id="swal_fi" min="${fechaMin}" max="${hoy}"
+                       style="width:100%;padding:6px 10px;border:1px solid #ccc;border-radius:6px;margin-top:4px">
+              </div>
+              <div style="flex:1;min-width:140px">
+                <label style="font-size:12px;font-weight:600;color:#555">Hasta</label>
+                <input type="date" id="swal_ff" min="${fechaMin}" max="${hoy}" value="${hoy}"
+                       style="width:100%;padding:6px 10px;border:1px solid #ccc;border-radius:6px;margin-top:4px">
+              </div>
+            </div>
+          </div>
+        </div>`,
+
+        showCancelButton: true,
+        confirmButtonText: accion === 'imprimir'
+            ? '<i class="fas fa-print me-1"></i>Imprimir'
+            : '<i class="fas fa-download me-1"></i>Descargar',
+        confirmButtonColor: accion === 'imprimir' ? '#1E8449' : '#1A5276',
+        cancelButtonText: '<i class="fas fa-times me-1"></i>Cancelar',
+        cancelButtonColor: '#6c757d',
+        customClass: { popup: 'swal-ips-popup' },
+        reverseButtons: true,
+
+        didOpen: () => {
+            // Mostrar/ocultar inputs según radio seleccionado
+            document.querySelectorAll('input[name="rango"]').forEach(r => {
+                r.addEventListener('change', () => {
+                    const div = document.getElementById('divFechas');
+                    div.style.display = r.value === 'personalizado' ? 'block' : 'none';
+                    // Highlight selected
+                    document.querySelectorAll('label[id]').forEach(l => {
+                        l.style.borderColor = '#ddd'; l.style.background = '#fff';
+                    });
+                    if (r.value === 'recientes') {
+                        document.getElementById('lbl30').style.borderColor = '#D35400';
+                        document.getElementById('lbl30').style.background = '#FEF9E7';
+                    }
+                    if (r.value === 'personalizado') {
+                        document.getElementById('lblPersonal').style.borderColor = '#1E8449';
+                        document.getElementById('lblPersonal').style.background = '#EAFAF1';
+                    }
+                });
+            });
+        },
+
+        preConfirm: () => {
+            const rango = document.querySelector('input[name="rango"]:checked').value;
+            if (rango === 'personalizado') {
+                const fi = document.getElementById('swal_fi').value;
+                const ff = document.getElementById('swal_ff').value;
+                if (!fi) { Swal.showValidationMessage('Ingresa la fecha de inicio'); return false; }
+                if (!ff) { Swal.showValidationMessage('Ingresa la fecha de fin'); return false; }
+                if (fi > ff) { Swal.showValidationMessage('La fecha inicio no puede ser mayor que la fecha fin'); return false; }
+                return { rango, fi, ff };
+            }
+            return { rango };
+        }
+    }).then(r => {
+        if (!r.isConfirmed) return;
+        const { rango, fi, ff } = r.value;
+        const hoy = fechaMax;
+        const hace30 = new Date(); hace30.setDate(hace30.getDate() - 30);
+        const hace30Str = hace30.toISOString().split('T')[0];
+
+        const fiId = `fi_${accion}`;
+        const ffId = `ff_${accion}`;
+        const srId = `sr_${accion}`;
+        const formId = accion === 'imprimir' ? 'formImprimirFecha' : 'formDescargarFecha';
+
+        if (rango === 'todo') {
+            document.getElementById(fiId).value = '';
+            document.getElementById(ffId).value = '';
+            document.getElementById(srId).value = '0';
+        } else if (rango === 'recientes') {
+            document.getElementById(fiId).value = hace30Str;
+            document.getElementById(ffId).value = hoy;
+            document.getElementById(srId).value = '1';
+        } else {
+            document.getElementById(fiId).value = fi;
+            document.getElementById(ffId).value = ff;
+            document.getElementById(srId).value = '0';
+        }
+        document.getElementById(formId).submit();
+    });
+}
+</script>
+{% endblock scripts %}

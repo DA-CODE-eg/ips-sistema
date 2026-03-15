@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Roles{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-person-badge-fill"></i> Gestión de Roles</h2>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrearRol">
+            <i class="bi bi-plus-circle"></i> Nuevo Rol
+        </button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if roles %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 10%;">#</th>
+                            <th>Nombre del Rol</th>
+                            <th>Descripción</th>
+                            <th style="width: 15%;" class="text-center">Usuarios</th>
+                            <th style="width: 20%;" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rol in roles %}
+                        <tr>
+                            <td class="align-middle">{{ loop.index }}</td>
+                            <td class="align-middle">
+                                <i class="bi bi-person-badge text-primary"></i>
+                                <strong>{{ rol.nombre }}</strong>
+                            </td>
+                            <td class="align-middle">
+                                {% if rol.descripcion %}
+                                    {{ rol.descripcion }}
+                                {% else %}
+                                    <span class="text-muted">Sin descripción</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle text-center">
+                                <span class="badge bg-info">
+                                    {{ rol.usuarios|length }} usuarios
+                                </span>
+                            </td>
+                            <td class="align-middle text-center">
+                                <div class="btn-group" role="group">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-primary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalEditar{{ rol.id }}">
+                                        Editar
+                                    </button>
+
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalEliminar{{ rol.id }}"
+                                            {% if rol.usuarios|length > 0 %}disabled{% endif %}>
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Modal Editar Rol -->
+                        <div class="modal fade" id="modalEditar{{ rol.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-primary text-white">
+                                        <h5 class="modal-title">
+                                            <i class="bi bi-pencil"></i> Editar Rol
+                                        </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('main.editar_rol', id=rol.id) }}">
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label for="nombre_edit_{{ rol.id }}" class="form-label">
+                                                    Nombre del Rol
+                                                </label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="bi bi-person-badge"></i>
+                                                    </span>
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           id="nombre_edit_{{ rol.id }}"
+                                                           name="nombre"
+                                                           value="{{ rol.nombre }}"
+                                                           required>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="descripcion_edit_{{ rol.id }}" class="form-label">
+                                                    Descripción
+                                                </label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="bi bi-card-text"></i>
+                                                    </span>
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           id="descripcion_edit_{{ rol.id }}"
+                                                           name="descripcion"
+                                                           value="{{ rol.descripcion or '' }}"
+                                                           placeholder="Descripción opcional del rol">
+                                                </div>
+                                            </div>
+
+                                            {% if rol.usuarios|length > 0 %}
+                                            <div class="alert alert-info">
+                                                <i class="bi bi-info-circle"></i>
+                                                Este rol tiene <strong>{{ rol.usuarios|length }}</strong> usuario(s) asociado(s).
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-check-circle"></i> Guardar Cambios
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal Eliminar Rol -->
+                        <div class="modal fade" id="modalEliminar{{ rol.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger text-white">
+                                        <h5 class="modal-title">
+                                            <i class="bi bi-trash"></i> Eliminar Rol
+                                        </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('main.eliminar_rol', id=rol.id) }}">
+                                        <div class="modal-body">
+                                            <p>¿Estás seguro de eliminar el rol <strong>{{ rol.nombre }}</strong>?</p>
+
+                                            {% if rol.usuarios|length > 0 %}
+                                            <div class="alert alert-danger">
+                                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                                <strong>No se puede eliminar:</strong> Este rol tiene {{ rol.usuarios|length }} usuario(s) asociado(s).
+                                            </div>
+                                            {% else %}
+                                            <div class="alert alert-warning">
+                                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                                <strong>Advertencia:</strong> Esta acción no se puede deshacer.
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit"
+                                                    class="btn btn-danger"
+                                                    {% if rol.usuarios|length > 0 %}disabled{% endif %}>
+                                                <i class="bi bi-trash"></i> Eliminar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                <p class="text-muted mt-3">No hay roles registrados</p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrearRol">
+                    <i class="bi bi-plus-circle"></i> Crear Primer Rol
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    {% if roles %}
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card text-bg-primary">
+                <div class="card-body text-center">
+                    <h3>{{ roles|length }}</h3>
+                    <p class="mb-0">Roles Totales</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-success">
+                <div class="card-body text-center">
+                    {% set con_usuarios = namespace(count=0) %}
+                    {% for rol in roles %}
+                        {% if rol.usuarios|length > 0 %}
+                            {% set con_usuarios.count = con_usuarios.count + 1 %}
+                        {% endif %}
+                    {% endfor %}
+                    <h3>{{ con_usuarios.count }}</h3>
+                    <p class="mb-0">Con Usuarios Asignados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-info">
+                <div class="card-body text-center">
+                    {% set total_usuarios = namespace(count=0) %}
+                    {% for rol in roles %}
+                        {% set total_usuarios.count = total_usuarios.count + rol.usuarios|length %}
+                    {% endfor %}
+                    <h3>{{ total_usuarios.count }}</h3>
+                    <p class="mb-0">Usuarios Totales</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Crear Rol -->
+<div class="modal fade" id="modalCrearRol" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle"></i> Nuevo Rol
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        {{ form.nombre.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-person-badge"></i>
+                            </span>
+                            {{ form.nombre(class="form-control", placeholder="Ej: admin, medico, enfermera, recepcionista") }}
+                        </div>
+                        {% if form.nombre.errors %}
+                            <div class="text-danger mt-2">
+                                {% for error in form.nombre.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.descripcion.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-card-text"></i>
+                            </span>
+                            {{ form.descripcion(class="form-control", placeholder="Descripción opcional del rol") }}
+                        </div>
+                        {% if form.descripcion.errors %}
+                            <div class="text-danger mt-2">
+                                {% for error in form.descripcion.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-lightbulb"></i>
+                        <strong>Sugerencia:</strong> Usa nombres descriptivos para los roles del sistema.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Crear Rol
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

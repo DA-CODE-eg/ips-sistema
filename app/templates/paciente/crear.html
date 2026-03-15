@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Nuevo Paciente - IPS Fulano{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-user-plus"></i> Nuevo Paciente</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('main.crear_paciente') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.nombre.label(class="form-label") }}
+                            {{ form.nombre(class="form-control" + (" is-invalid" if form.nombre.errors else "")) }}
+                            {% if form.nombre.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.nombre.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.identificacion.label(class="form-label") }}
+                            {{ form.identificacion(class="form-control" + (" is-invalid" if form.identificacion.errors else "")) }}
+                            {% if form.identificacion.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.identificacion.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.sexo.label(class="form-label") }}
+                            {{ form.sexo(class="form-control" + (" is-invalid" if form.sexo.errors else ""), placeholder="Ej: Masculino, Femenino, Otro") }}
+                            {% if form.sexo.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.sexo.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Ingrese el sexo del paciente (Masculino, Femenino, Otro)</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.fecha_nacimiento.label(class="form-label") }}
+                            {{ form.fecha_nacimiento(class="form-control" + (" is-invalid" if form.fecha_nacimiento.errors else "")) }}
+                            {% if form.fecha_nacimiento.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.fecha_nacimiento.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.telefono.label(class="form-label") }}
+                            {{ form.telefono(class="form-control" + (" is-invalid" if form.telefono.errors else "")) }}
+                            {% if form.telefono.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.telefono.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.direccion.label(class="form-label") }}
+                            {{ form.direccion(class="form-control" + (" is-invalid" if form.direccion.errors else ""), rows=3) }}
+                            {% if form.direccion.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.direccion.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {% include 'paciente/_campos_extra.html' %}
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('main.lista_pacientes') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Cancelar
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

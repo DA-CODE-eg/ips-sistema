@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Especialidades{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-heart-pulse-fill"></i> Gestión de Especialidades</h2>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrearEspecialidad">
+            <i class="bi bi-plus-circle"></i> Nueva Especialidad
+        </button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if especialidades %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 10%;">#</th>
+                            <th>Nombre de Especialidad</th>
+                            <th style="width: 15%;" class="text-center">Citas</th>
+                            <th style="width: 20%;" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for especialidad in especialidades %}
+                        <tr>
+                            <td class="align-middle">{{ loop.index }}</td>
+                            <td class="align-middle">
+                                <i class="bi bi-heart-pulse text-primary"></i>
+                                <strong>{{ especialidad.nombre }}</strong>
+                            </td>
+                            <td class="align-middle text-center">
+                                <span class="badge bg-info">
+                                    {{ especialidad.citas|length }} citas
+                                </span>
+                            </td>
+                            <td class="align-middle text-center">
+                                <div class="btn-group" role="group">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-primary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalEditar{{ especialidad.id }}">
+                                        Editar
+                                    </button>
+
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalEliminar{{ especialidad.id }}"
+                                            {% if especialidad.citas|length > 0 %}disabled{% endif %}>
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Modal Editar Especialidad -->
+                        <div class="modal fade" id="modalEditar{{ especialidad.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-primary text-white">
+                                        <h5 class="modal-title">
+                                            <i class="bi bi-pencil"></i> Editar Especialidad
+                                        </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('main.editar_especialidad', id=especialidad.id) }}">
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label for="nombre_edit_{{ especialidad.id }}" class="form-label">
+                                                    Nombre de la Especialidad
+                                                </label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="bi bi-heart-pulse"></i>
+                                                    </span>
+                                                    <input type="text" 
+                                                           class="form-control" 
+                                                           id="nombre_edit_{{ especialidad.id }}"
+                                                           name="nombre" 
+                                                           value="{{ especialidad.nombre }}"
+                                                           required>
+                                                </div>
+                                            </div>
+                                            
+                                            {% if especialidad.citas|length > 0 %}
+                                            <div class="alert alert-info">
+                                                <i class="bi bi-info-circle"></i>
+                                                Esta especialidad tiene <strong>{{ especialidad.citas|length }}</strong> cita(s) asociada(s).
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-check-circle"></i> Guardar Cambios
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal Eliminar Especialidad -->
+                        <div class="modal fade" id="modalEliminar{{ especialidad.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger text-white">
+                                        <h5 class="modal-title">
+                                            <i class="bi bi-trash"></i> Eliminar Especialidad
+                                        </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('main.eliminar_especialidad', id=especialidad.id) }}">
+                                        <div class="modal-body">
+                                            <p>¿Estás seguro de eliminar la especialidad <strong>{{ especialidad.nombre }}</strong>?</p>
+                                            
+                                            {% if especialidad.citas|length > 0 %}
+                                            <div class="alert alert-danger">
+                                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                                <strong>No se puede eliminar:</strong> Esta especialidad tiene {{ especialidad.citas|length }} cita(s) asociada(s).
+                                            </div>
+                                            {% else %}
+                                            <div class="alert alert-warning">
+                                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                                <strong>Advertencia:</strong> Esta acción no se puede deshacer.
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" 
+                                                    class="btn btn-danger"
+                                                    {% if especialidad.citas|length > 0 %}disabled{% endif %}>
+                                                <i class="bi bi-trash"></i> Eliminar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                <p class="text-muted mt-3">No hay especialidades registradas</p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrearEspecialidad">
+                    <i class="bi bi-plus-circle"></i> Crear Primera Especialidad
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    {% if especialidades %}
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card text-bg-primary">
+                <div class="card-body text-center">
+                    <h3>{{ especialidades|length }}</h3>
+                    <p class="mb-0">Especialidades Totales</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-success">
+                <div class="card-body text-center">
+                    {% set con_citas = namespace(count=0) %}
+                    {% for esp in especialidades %}
+                        {% if esp.citas|length > 0 %}
+                            {% set con_citas.count = con_citas.count + 1 %}
+                        {% endif %}
+                    {% endfor %}
+                    <h3>{{ con_citas.count }}</h3>
+                    <p class="mb-0">Con Citas Activas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-info">
+                <div class="card-body text-center">
+                    {% set total_citas = namespace(count=0) %}
+                    {% for esp in especialidades %}
+                        {% set total_citas.count = total_citas.count + esp.citas|length %}
+                    {% endfor %}
+                    <h3>{{ total_citas.count }}</h3>
+                    <p class="mb-0">Citas Totales</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Crear Especialidad -->
+<div class="modal fade" id="modalCrearEspecialidad" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle"></i> Nueva Especialidad
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        {{ form.nombre.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-heart-pulse"></i>
+                            </span>
+                            {{ form.nombre(class="form-control", placeholder="Ej: Cardiología, Pediatría, Odontología") }}
+                        </div>
+                        {% if form.nombre.errors %}
+                            <div class="text-danger mt-2">
+                                {% for error in form.nombre.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-lightbulb"></i>
+                        <strong>Sugerencia:</strong> Usa nombres descriptivos y específicos para las especialidades médicas.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Crear Especialidad
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

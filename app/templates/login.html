@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IPS FULANO — Acceso</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --rojo: #e53935;
+            --rojo-oscuro: #b71c1c;
+            --rojo-suave: #ffebee;
+            --rojo-borde: #ef9a9a;
+            --blanco: #ffffff;
+            --gris-fondo: #f5f5f5;
+            --gris-claro: #fafafa;
+            --gris-borde: #e0e0e0;
+            --texto: #212121;
+            --texto-suave: #757575;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            background-color: var(--gris-fondo);
+            font-family: 'DM Sans', sans-serif;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Panel izquierdo */
+        .panel-izquierdo {
+            width: 55%;
+            position: relative;
+            background: linear-gradient(145deg, var(--rojo-oscuro) 0%, var(--rojo) 60%, #ef5350 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Círculos decorativos */
+        .circulo {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .circulo-1 { width: 500px; height: 500px; top: -100px; right: -100px; }
+        .circulo-2 { width: 300px; height: 300px; bottom: -80px; left: -80px; }
+        .circulo-3 { width: 180px; height: 180px; top: 40%; right: 10%; background: rgba(255,255,255,0.05); }
+
+        /* Patrón de puntos */
+        .puntos {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1px);
+            background-size: 28px 28px;
+        }
+
+        .contenido-izquierdo {
+            position: relative;
+            z-index: 1;
+            padding: 64px;
+        }
+
+        .cruz-icono {
+            font-size: 56px;
+            color: rgba(255,255,255,0.3);
+            margin-bottom: 24px;
+            display: block;
+        }
+
+        .logo-grande {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 80px;
+            color: white;
+            line-height: 0.9;
+            letter-spacing: 3px;
+            margin-bottom: 6px;
+            text-shadow: 0 4px 24px rgba(0,0,0,0.2);
+        }
+
+        .subtitulo-logo {
+            font-size: 12px;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.65);
+            margin-bottom: 40px;
+        }
+
+        .separador {
+            width: 48px;
+            height: 3px;
+            background: rgba(255,255,255,0.5);
+            margin-bottom: 28px;
+            border-radius: 2px;
+        }
+
+        .descripcion {
+            font-size: 15px;
+            color: rgba(255,255,255,0.75);
+            line-height: 1.9;
+            max-width: 360px;
+            font-weight: 300;
+        }
+
+        .badges {
+            display: flex;
+            gap: 10px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+
+        .badge-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 7px 14px;
+            border-radius: 100px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.8);
+            letter-spacing: 1.5px;
+            backdrop-filter: blur(4px);
+        }
+
+        .badge-item i { font-size: 10px; }
+
+        /* Panel derecho */
+        .panel-derecho {
+            width: 45%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--gris-claro);
+            padding: 48px 40px;
+            position: relative;
+        }
+
+        .form-box {
+            width: 100%;
+            max-width: 380px;
+            animation: entrar 0.5s ease-out both;
+        }
+
+        @keyframes entrar {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header del form */
+        .form-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 36px;
+            padding-bottom: 28px;
+            border-bottom: 1px solid var(--gris-borde);
+        }
+
+        .icono-header {
+            width: 48px;
+            height: 48px;
+            background: var(--rojo-suave);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--rojo);
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .form-titulo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 30px;
+            color: var(--texto);
+            letter-spacing: 2px;
+            line-height: 1;
+        }
+
+        .form-subtitulo {
+            font-size: 12px;
+            color: var(--texto-suave);
+            letter-spacing: 0.5px;
+            margin-top: 3px;
+        }
+
+        /* Inputs */
+        .form-group { margin-bottom: 18px; }
+
+        .form-label-custom {
+            display: block;
+            font-size: 11px;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: var(--texto-suave);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .input-wrapper { position: relative; }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #bdbdbd;
+            font-size: 14px;
+            transition: color 0.2s;
+            pointer-events: none;
+        }
+
+        .form-control-custom {
+            width: 100%;
+            background: var(--blanco);
+            border: 1.5px solid var(--gris-borde);
+            border-radius: 10px;
+            padding: 13px 15px 13px 42px;
+            font-size: 14px;
+            color: var(--texto);
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .form-control-custom:focus {
+            border-color: var(--rojo);
+            box-shadow: 0 0 0 3px rgba(229,57,53,0.1);
+        }
+
+        .input-wrapper:focus-within i { color: var(--rojo); }
+
+        .form-control-custom::placeholder { color: #bdbdbd; }
+
+        /* Botón */
+        .btn-ingresar {
+            width: 100%;
+            background: linear-gradient(135deg, var(--rojo) 0%, var(--rojo-oscuro) 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 14px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 17px;
+            letter-spacing: 3px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 6px;
+            box-shadow: 0 4px 16px rgba(229,57,53,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-ingresar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(229,57,53,0.4);
+        }
+
+        .btn-ingresar:active { transform: translateY(0); }
+
+        .btn-ingresar:disabled {
+            opacity: 0.75;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Estado del sistema */
+        .estado-sistema {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 28px;
+        }
+
+        .punto-vivo {
+            width: 8px;
+            height: 8px;
+            background: #4caf50;
+            border-radius: 50%;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .punto-vivo::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            border: 1.5px solid #4caf50;
+            animation: pulso 2s ease-out infinite;
+        }
+
+        @keyframes pulso {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+
+        .estado-texto {
+            font-size: 11px;
+            color: #9e9e9e;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Pie */
+        .pie-form {
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid var(--gris-borde);
+            text-align: center;
+            font-size: 11px;
+            color: #bdbdbd;
+            letter-spacing: 1px;
+        }
+
+        .pie-form i { color: var(--rojo-borde); margin-right: 5px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .panel-izquierdo { display: none; }
+            .panel-derecho { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Panel izquierdo rojo -->
+<div class="panel-izquierdo">
+    <div class="puntos"></div>
+    <div class="circulo circulo-1"></div>
+    <div class="circulo circulo-2"></div>
+    <div class="circulo circulo-3"></div>
+    <div class="contenido-izquierdo">
+        <i class="fas fa-plus-circle cruz-icono"></i>
+        <div class="logo-grande">IPS<br>FULANO</div>
+        <div class="subtitulo-logo">Sistema de Gestión en Salud</div>
+        <div class="separador"></div>
+        <p class="descripcion">
+            Plataforma integral para la gestión de pacientes, citas médicas e historias clínicas de la fundación.
+        </p>
+        <div class="badges">
+            <div class="badge-item"><i class="fas fa-shield-alt"></i> SEGURO</div>
+            <div class="badge-item"><i class="fas fa-clock"></i> 24 / 7</div>
+            <div class="badge-item"><i class="fas fa-database"></i> RESPALDO DIARIO</div>
+        </div>
+    </div>
+</div>
+
+<!-- Panel derecho claro -->
+<div class="panel-derecho">
+    <div class="form-box">
+
+        <div class="estado-sistema">
+            <div class="punto-vivo"></div>
+            <span class="estado-texto">Sistema en línea</span>
+        </div>
+
+        <div class="form-header">
+            <div class="icono-header">
+                <i class="fas fa-hospital"></i>
+            </div>
+            <div>
+                <div class="form-titulo">INICIAR SESIÓN</div>
+                <div class="form-subtitulo">Ingresa tus credenciales para continuar</div>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert-data" data-category="{{ category }}" data-message="{{ message }}"></div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" id="loginForm">
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                <label class="form-label-custom">Correo electrónico</label>
+                <div class="input-wrapper">
+                    {{ form.email(class="form-control-custom", placeholder="tucorreo@ejemplo.com") }}
+                    <i class="fas fa-envelope"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label-custom">Contraseña</label>
+                <div class="input-wrapper">
+                    {{ form.password(class="form-control-custom", placeholder="••••••••") }}
+                    <i class="fas fa-lock"></i>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-ingresar" id="btnLogin">
+                INGRESAR AL SISTEMA
+            </button>
+        </form>
+
+        <div class="pie-form">
+            <i class="fas fa-lock"></i>
+            CONEXIÓN CIFRADA — IPS FULANO © 2026
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', function() {
+    const btn = document.getElementById('btnLogin');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>VERIFICANDO...';
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.alert-data').forEach(el => {
+        const category = el.dataset.category;
+        const message  = el.dataset.message;
+        let icon = 'info';
+        if (category === 'success') icon = 'success';
+        else if (category === 'danger' || category === 'error') icon = 'error';
+        else if (category === 'warning') icon = 'warning';
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3500,
+            timerProgressBar: true,
+            icon: icon,
+            title: message
+        });
+    });
+});
+</script>
+</body>
+</html>

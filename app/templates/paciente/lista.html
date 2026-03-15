@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Pacientes</h2>
+
+<a href="{{ url_for('main.crear_paciente') }}" class="btn btn-ips mb-3">+ Nuevo Paciente</a>
+
+<form method="GET" action="{{ url_for('main.lista_pacientes') }}" class="mb-3">
+    <div class="input-group">
+        <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Buscar por nombre o identificación">
+        <button class="btn btn-outline-secondary" type="submit">Buscar</button>
+    </div>
+</form>
+
+{% if pacientes %}
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Identificación</th>
+      <th>Teléfono</th>
+      <th>Estado</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in pacientes %}
+    <tr>
+      <td>{{ p.nombre }}</td>
+      <td>{{ p.identificacion }}</td>
+      <td>{{ p.telefono or '—' }}</td>
+      <td>
+        {% if p.activo %}
+          <span class="badge bg-success">Activo</span>
+        {% else %}
+          <span class="badge bg-secondary">Inactivo</span>
+        {% endif %}
+      </td>
+      <td>
+        <a href="{{ url_for('main.historia_clinica', id=p.id) }}" class="btn btn-sm btn-outline-primary">Historia</a>
+        {% if current_user.rol == 'admin' %}
+          {% if p.activo %}
+            <a href="{{ url_for('main.inactivar_paciente', id=p.id) }}" class="btn btn-sm btn-outline-warning">Inactivar</a>
+          {% else %}
+            <a href="{{ url_for('main.activar_paciente', id=p.id) }}" class="btn btn-sm btn-outline-success">Activar</a>
+          {% endif %}
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">No hay pacientes registrados.</p>
+{% endif %}
+
+{% endblock %}

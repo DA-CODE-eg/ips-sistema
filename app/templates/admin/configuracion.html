@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2><i class="fas fa-cog text-secondary me-2"></i>Configuración del Sistema</h2>
+</div>
+
+<div class="row g-3">
+
+  <!-- 2FA -->
+  <div class="col-md-6">
+    <div class="card border-{{ 'success' if dos_fa_activo else 'danger' }} h-100">
+      <div class="card-header bg-{{ 'success' if dos_fa_activo else 'danger' }} text-white d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-shield-alt me-2"></i>Verificación 2 pasos (2FA)</span>
+        <span class="badge bg-light text-{{ 'success' if dos_fa_activo else 'danger' }}">
+          {{ '✅ ACTIVO' if dos_fa_activo else '❌ DESACTIVADO' }}
+        </span>
+      </div>
+      <div class="card-body">
+        <p style="font-size:14px;">Cuando está <strong>activo</strong>, todos los usuarios reciben un código al correo al iniciar sesión. Expira en <strong>5 minutos</strong>.</p>
+        {% if dos_fa_activo %}
+        <form method="POST" action="{{ url_for('main.toggle_2fa') }}"
+              onsubmit="return confirm('¿Desactivar 2FA? Los usuarios entrarán sin código.')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="accion" value="desactivar">
+          <button type="submit" class="btn btn-danger w-100">
+            <i class="fas fa-times-circle me-2"></i>Desactivar 2FA
+          </button>
+        </form>
+        {% else %}
+        <div class="alert alert-warning py-2" style="font-size:13px;">
+          <i class="fas fa-exclamation-triangle me-1"></i> 2FA desactivado. Usuarios entran sin código.
+        </div>
+        <form method="POST" action="{{ url_for('main.toggle_2fa') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="accion" value="activar">
+          <button type="submit" class="btn btn-success w-100">
+            <i class="fas fa-shield-alt me-2"></i>Activar 2FA
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Correo y Backup -->
+  <div class="col-md-6">
+    <div class="card border-primary h-100">
+      <div class="card-header bg-primary text-white">
+        <i class="fas fa-envelope me-2"></i>Correo y Backup Automático
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('main.admin_configuracion') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="mb-3">
+            <label class="form-label fw-bold" style="font-size:13px;">
+              <i class="fas fa-at me-1"></i>Correo Gmail del sistema
+            </label>
+            <input type="email" name="gmail_user" class="form-control form-control-sm"
+                   value="{{ gmail_user }}" placeholder="sistema@gmail.com">
+            <small class="text-muted">Correo desde el que se envían los códigos 2FA y notificaciones.</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold" style="font-size:13px;">
+              <i class="fas fa-key me-1"></i>Contraseña de aplicación Gmail
+            </label>
+            <input type="password" name="gmail_app_password" class="form-control form-control-sm"
+                   placeholder="xxxx xxxx xxxx xxxx (dejar vacío para no cambiar)">
+            <small class="text-muted">Crea una en: myaccount.google.com → Seguridad → Contraseñas de app</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold" style="font-size:13px;">
+              <i class="fas fa-download me-1"></i>Correo para recibir backups
+            </label>
+            <input type="email" name="backup_email" class="form-control form-control-sm"
+                   value="{{ backup_email }}" placeholder="backup@gmail.com">
+            <small class="text-muted">Al generar un backup, se enviará como adjunto ZIP a este correo.</small>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-save me-2"></i>Guardar configuración
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZIP al correo — Programación -->
+  <div class="col-12">
+    <div class="card border-{{ 'success' if zip_activo else 'secondary' }}">
+      <div class="card-header bg-{{ 'success' if zip_activo else 'secondary' }} text-white d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-file-archive me-2"></i>ZIP de Backup al Correo</span>
+        <span class="badge bg-light text-{{ 'success' if zip_activo else 'secondary' }}">
+          {{ '✅ ACTIVO' if zip_activo else '⏸ DESACTIVADO' }}
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+
+          <!-- Toggle activo/inactivo -->
+          <div class="col-md-3">
+            <label class="form-label fw-bold" style="font-size:13px;">Estado</label>
+            <form method="POST" action="{{ url_for('main.toggle_zip_backup') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {% if zip_activo %}
+              <button type="submit" class="btn btn-outline-danger w-100">
+                <i class="fas fa-pause me-2"></i>Desactivar ZIP
+              </button>
+              {% else %}
+              <button type="submit" class="btn btn-success w-100">
+                <i class="fas fa-play me-2"></i>Activar ZIP
+              </button>
+              {% endif %}
+            </form>
+          </div>
+
+          <!-- Frecuencia y hora -->
+          <div class="col-md-9">
+            <form method="POST" action="{{ url_for('main.configurar_zip_backup') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="row g-2 align-items-end">
+                <div class="col-md-5">
+                  <label class="form-label fw-bold" style="font-size:13px;">
+                    <i class="fas fa-calendar-alt me-1"></i>Frecuencia de envío
+                  </label>
+                  <select name="zip_frecuencia" class="form-select form-select-sm">
+                    <option value="hora"      {{ 'selected' if zip_frecuencia == 'hora' }}>Cada hora</option>
+                    <option value="dia"       {{ 'selected' if zip_frecuencia == 'dia' }}>Cada día</option>
+                    <option value="semana"    {{ 'selected' if zip_frecuencia == 'semana' }}>Cada semana</option>
+                    <option value="mes"       {{ 'selected' if zip_frecuencia == 'mes' }}>Cada mes</option>
+                    <option value="2meses"    {{ 'selected' if zip_frecuencia == '2meses' }}>Cada 2 meses</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-bold" style="font-size:13px;">
+                    <i class="fas fa-clock me-1"></i>Hora de envío
+                  </label>
+                  <input type="time" name="zip_hora" class="form-control form-control-sm"
+                         value="{{ zip_hora or '08:00' }}">
+                </div>
+                <div class="col-md-3">
+                  <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-save me-1"></i>Guardar
+                  </button>
+                </div>
+              </div>
+              <small class="text-muted mt-1 d-block">
+                <i class="fas fa-info-circle me-1"></i>
+                Próximo envío:
+                <strong>{{ proximo_zip or 'Se calculará al guardar' }}</strong>
+              </small>
+            </form>
+          </div>
+
+        </div>
+
+        <div class="alert alert-info mt-3 mb-0 py-2" style="font-size:13px;">
+          <i class="fab fa-google-drive me-1"></i>
+          <strong>Google Drive</strong> se actualiza siempre cada 5 minutos — independiente de esta configuración.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

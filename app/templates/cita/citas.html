@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}Citas - IPS Fulano{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+      <h2><i class="fas fa-calendar-check me-2"></i>Gestión de Citas</h2>
+    </div>
+    <div class="col-md-6 text-end d-flex gap-2 justify-content-end flex-wrap">
+      {% set sol = citas|selectattr('estado','equalto','Solicitada')|list|length %}
+      {% if sol > 0 %}
+      <span class="badge bg-danger d-flex align-items-center fs-6 px-3">
+        <i class="fas fa-bell me-1"></i>{{ sol }} solicitud{{ 's' if sol > 1 else '' }} nueva{{ 's' if sol > 1 else '' }}
+      </span>
+      {% endif %}
+      <a href="{{ url_for('main.solicitar_cita_publica') }}" class="btn btn-outline-success" target="_blank">
+        <i class="fas fa-link me-1"></i> Link público
+      </a>
+      <a href="{{ url_for('main.crear_cita') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> Nueva Cita
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros rápidos por estado -->
+  <div class="d-flex gap-2 mb-3 flex-wrap">
+    <a href="{{ url_for('main.lista_citas') }}"
+       class="btn btn-sm {{ 'btn-dark' if not request.args.get('estado') else 'btn-outline-dark' }}">
+      Todas ({{ citas|length }})
+    </a>
+    {% for estado, color in [('Solicitada','danger'),('Confirmada','primary'),('Pendiente','warning'),('Realizada','success'),('Cancelada','secondary')] %}
+    {% set cnt = citas|selectattr('estado','equalto',estado)|list|length %}
+    <a href="{{ url_for('main.lista_citas', estado=estado) }}"
+       class="btn btn-sm {{ ('btn-' + color) if request.args.get('estado') == estado else ('btn-outline-' + color) }}">
+      {{ estado }}{% if cnt > 0 %} <span class="badge bg-white text-dark">{{ cnt }}</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Buscador -->
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <form method="GET" action="{{ url_for('main.lista_citas') }}" class="d-flex">
+        <input type="hidden" name="estado" value="{{ request.args.get('estado','') }}">
+        <input type="text" name="q" class="form-control me-2"
+               placeholder="Buscar paciente, médico o especialidad..."
+               value="{{ request.args.get('q','') }}">
+        <button type="submit" class="btn btn-secondary"><i class="fas fa-search"></i></button>
+        {% if request.args.get('q') %}
+        <a href="{{ url_for('main.lista_citas') }}" class="btn btn-outline-secondary ms-2">
+          <i class="fas fa-times"></i>
+        </a>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  {% set estado_filtro = request.args.get('estado','') %}
+  {% set citas_filtradas = citas|selectattr('estado','equalto',estado_filtro)|list if estado_filtro else citas %}
+
+  {% if citas_filtradas %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>ID</th><th>Paciente</th><th>Médico</th><th>Especialidad</th>
+          <th>Fecha</th><th>Estado</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cita in citas_filtradas %}
+        <tr class="{{ 'table-warning' if cita.estado == 'Solicitada' else '' }}">
+          <td><small class="text-muted">#{{ cita.id }}</small></td>
+          <td>
+            <strong>{{ cita.paciente.nombre if cita.paciente else 'N/A' }}</strong>
+            {% if cita.paciente %}<br><small class="text-muted">{{ cita.paciente.identificacion }}</small>{% endif %}
+          </td>
+          <td>
+            {% if cita.medico %}{{ cita.medico.nombre }}
+            {% else %}<span class="text-muted fst-italic">Sin asignar</span>{% endif %}
+          </td>
+          <td>{{ cita.especialidad.nombre if cita.especialidad else 'N/A' }}</td>
+          <td>
+            {% if cita.fecha %}
+              {{ cita.fecha.strftime('%d/%m/%Y') }}<br>
+              <small class="text-muted">{{ cita.fecha.strftime('%H:%M') }}</small>
+            {% else %}<span class="text-muted">Por definir</span>{% endif %}
+          </td>
+          <td>
+            {% if cita.estado == 'Solicitada' %}
+              <span class="badge bg-danger"><i class="fas fa-bell me-1"></i>Solicitada</span>
+            {% elif cita.estado == 'Confirmada' %}
+              <span class="badge bg-primary"><i class="fas fa-check me-1"></i>Confirmada</span>
+            {% elif cita.estado == 'Pendiente' %}
+              <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pendiente</span>
+            {% elif cita.estado == 'Realizada' %}
+              <span class="badge bg-success"><i class="fas fa-check-double me-1"></i>Realizada</span>
+            {% elif cita.estado == 'Cancelada' %}
+              <span class="badge bg-secondary"><i class="fas fa-ban me-1"></i>Cancelada</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ cita.estado }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1 flex-wrap">
+              <a href="{{ url_for('main.tiquete_cita', id=cita.id) }}" target="_blank"
+                 class="btn btn-sm btn-outline-info" title="Ver tiquete">
+                <i class="fas fa-ticket-alt"></i>
+              </a>
+
+              {% if cita.estado == 'Solicitada' %}
+              <button class="btn btn-sm btn-primary"
+                      onclick="confirmarCita({{ cita.id }}, '{{ cita.paciente.nombre|replace("'","") if cita.paciente else '' }}', '{{ cita.especialidad.nombre|replace("'","") if cita.especialidad else '' }}')">
+                <i class="fas fa-check me-1"></i>Confirmar
+              </button>
+              <form id="formConfirmar{{ cita.id }}" method="POST"
+                    action="{{ url_for('main.confirmar_cita', id=cita.id) }}" style="display:none">
+                <input type="hidden" name="fecha_confirmada" id="fc_fecha_{{ cita.id }}">
+                <input type="hidden" name="hora_confirmada"  id="fc_hora_{{ cita.id }}">
+              </form>
+              {% endif %}
+
+              {% if cita.estado in ['Pendiente','Confirmada'] %}
+              <button class="btn btn-sm btn-success" title="Marcar realizada"
+                      onclick="marcarRealizada({{ cita.id }}, '{{ cita.paciente.nombre|replace("'","") if cita.paciente else '' }}')">
+                <i class="fas fa-check-double"></i>
+              </button>
+              <form id="formMarcar{{ cita.id }}" method="POST"
+                    action="{{ url_for('main.marcar_cita_realizada', id=cita.id) }}" style="display:none"></form>
+              {% endif %}
+
+              {% if cita.estado not in ['Realizada','Cancelada'] %}
+              <button class="btn btn-sm btn-warning" title="Cancelar"
+                      onclick="cancelarCita({{ cita.id }}, '{{ cita.paciente.nombre|replace("'","") if cita.paciente else '' }}')">
+                <i class="fas fa-ban"></i>
+              </button>
+              <form id="formCancelar{{ cita.id }}" method="POST"
+                    action="{{ url_for('main.cancelar_cita', id=cita.id) }}" style="display:none">
+                <input type="hidden" name="motivo" id="motivo_{{ cita.id }}">
+              </form>
+              {% endif %}
+
+              <button class="btn btn-sm btn-danger" title="Eliminar"
+                      onclick="eliminarCita({{ cita.id }}, '{{ cita.paciente.nombre|replace("'","") if cita.paciente else '' }}')">
+                <i class="fas fa-trash"></i>
+              </button>
+              <form id="formEliminar{{ cita.id }}" method="POST"
+                    action="{{ url_for('main.eliminar_cita', id=cita.id) }}" style="display:none"></form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-info">
+    <i class="fas fa-info-circle me-2"></i>
+    No hay citas{% if estado_filtro %} con estado "{{ estado_filtro }}"{% endif %}.
+  </div>
+  {% endif %}
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script>
+function confirmarCita(id, paciente, especialidad) {
+    const hoy = new Date().toISOString().split('T')[0];
+    Swal.fire({
+        title: '✅ Confirmar Cita',
+        html: `
+        <p style="color:#555;margin-bottom:10px">
+          Confirmando cita de <strong>${paciente}</strong><br>
+          <em style="color:#888">${especialidad}</em>
+        </p>
+        <div style="background:#EAF4FB;border-left:4px solid #1A5276;padding:8px 12px;border-radius:6px;font-size:13px;margin-bottom:12px;text-align:left">
+          <i class="fas fa-robot me-1" style="color:#1A5276"></i>
+          El médico se asigna automáticamente según disponibilidad
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;text-align:left">
+          <div style="flex:1;min-width:140px">
+            <label style="font-size:12px;font-weight:600;color:#555">📅 Fecha definitiva</label>
+            <input type="date" id="fc_f" min="${hoy}"
+                   style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;margin-top:4px">
+          </div>
+          <div style="flex:1;min-width:120px">
+            <label style="font-size:12px;font-weight:600;color:#555">🕐 Hora</label>
+            <input type="time" id="fc_h" value="08:00"
+                   style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;margin-top:4px">
+          </div>
+        </div>`,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-check me-1"></i>Confirmar y enviar tiquete',
+        confirmButtonColor: '#1A5276',
+        cancelButtonText: '<i class="fas fa-times me-1"></i>Cancelar',
+        cancelButtonColor: '#6c757d',
+        reverseButtons: true,
+        customClass: { popup: 'swal-ips-popup' },
+        preConfirm: () => {
+            const f = document.getElementById('fc_f').value;
+            const h = document.getElementById('fc_h').value;
+            if (!f) { Swal.showValidationMessage('Ingresa la fecha'); return false; }
+            if (!h) { Swal.showValidationMessage('Ingresa la hora');  return false; }
+            return { f, h };
+        }
+    }).then(r => {
+        if (!r.isConfirmed) return;
+        document.getElementById(`fc_fecha_${id}`).value = r.value.f;
+        document.getElementById(`fc_hora_${id}`).value  = r.value.h;
+        document.getElementById(`formConfirmar${id}`).submit();
+    });
+}
+
+function marcarRealizada(id, paciente) {
+    IpsConfirmar({
+        titulo : '¿Marcar como realizada?',
+        texto  : `Confirmar que <strong>${paciente}</strong> asistió a la cita.`,
+        icono  : 'question',
+        btnOk  : '<i class="fas fa-check-double me-1"></i>Sí, realizada',
+        colorOk: '#1E8449'
+    }).then(r => { if (r.isConfirmed) document.getElementById(`formMarcar${id}`).submit(); });
+}
+
+function cancelarCita(id, paciente) {
+    Swal.fire({
+        title: '❌ Cancelar cita',
+        html: `
+        <p>¿Cancelar la cita de <strong>${paciente}</strong>?</p>
+        <p style="font-size:13px;color:#555">Se notificará al paciente por correo electrónico.</p>
+        <textarea id="motivo_txt" placeholder="Motivo de cancelación (opcional)..."
+                  style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;
+                         margin-top:8px;font-size:13px;resize:vertical" rows="3"></textarea>`,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-ban me-1"></i>Sí, cancelar cita',
+        confirmButtonColor: '#D35400',
+        cancelButtonText: '<i class="fas fa-times me-1"></i>No',
+        cancelButtonColor: '#6c757d',
+        reverseButtons: true,
+        customClass: { popup: 'swal-ips-popup' }
+    }).then(r => {
+        if (!r.isConfirmed) return;
+        const m = document.getElementById('motivo_txt');
+        document.getElementById(`motivo_${id}`).value = m ? m.value : '';
+        document.getElementById(`formCancelar${id}`).submit();
+    });
+}
+
+function eliminarCita(id, paciente) {
+    IpsConfirmar({
+        titulo : '¿Eliminar cita?',
+        texto  : `La cita de <strong>${paciente}</strong> se eliminará permanentemente.`,
+        icono  : 'warning',
+        btnOk  : '<i class="fas fa-trash me-1"></i>Sí, eliminar',
+        colorOk: '#C0392B'
+    }).then(r => { if (r.isConfirmed) document.getElementById(`formEliminar${id}`).submit(); });
+}
+</script>
+{% endblock scripts %}
